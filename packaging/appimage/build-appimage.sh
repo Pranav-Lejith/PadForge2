@@ -26,8 +26,8 @@ DESTDIR="${appdir}" cmake --install "${build_dir}"
 
 install -Dm644 "${repo_root}/packaging/appimage/AppRun" "${appdir}/AppRun"
 chmod +x "${appdir}/AppRun"
-mkdir -p "${appdir}/usr/share/padforge/plugins"
-cp -r "${repo_root}/plugins/lua/." "${appdir}/usr/share/padforge/plugins/"
+mkdir -p "${appdir}/usr/share/PadForge/plugins"
+cp -r "${repo_root}/plugins/lua/." "${appdir}/usr/share/PadForge/plugins/"
 
 export OUTPUT="${repo_root}/dist/PadForge-x86_64.AppImage"
 export QMAKE="${QMAKE:-$(command -v qmake6 || command -v qmake)}"

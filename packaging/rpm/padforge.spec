@@ -34,8 +34,8 @@ QT_QPA_PLATFORM=offscreen %ctest --output-on-failure
 
 %install
 %cmake_install
-mkdir -p %{buildroot}%{_datadir}/%{name}/plugins
-cp -r plugins/lua/. %{buildroot}%{_datadir}/%{name}/plugins/
+mkdir -p %{buildroot}%{_datadir}/PadForge/plugins
+cp -r plugins/lua/. %{buildroot}%{_datadir}/PadForge/plugins/
 
 %files
 %license LICENSE
@@ -43,7 +43,7 @@ cp -r plugins/lua/. %{buildroot}%{_datadir}/%{name}/plugins/
 %{_datadir}/applications/org.padforge.PadForge.desktop
 %{_datadir}/icons/hicolor/scalable/apps/org.padforge.PadForge.svg
 %{_datadir}/metainfo/org.padforge.PadForge.metainfo.xml
-%{_datadir}/%{name}/plugins/
+%{_datadir}/PadForge/plugins/
 
 %changelog
 * Sun Oct 11 2026 PadForge contributors - 0.1.0-1

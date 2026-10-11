@@ -31,6 +31,6 @@ package() {
     DESTDIR="$pkgdir" cmake --install build
     install -Dm644 "$pkgname-$pkgver/LICENSE" \
         "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
-    install -d "$pkgdir/usr/share/$pkgname/plugins"
-    cp -r "$pkgname-$pkgver/plugins/lua/." "$pkgdir/usr/share/$pkgname/plugins/"
+    install -d "$pkgdir/usr/share/PadForge/plugins"
+    cp -r "$pkgname-$pkgver/plugins/lua/." "$pkgdir/usr/share/PadForge/plugins/"
 }

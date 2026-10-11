@@ -24,5 +24,5 @@ modules:
         url: https://github.com/padforge/padforge.git
         tag: v0.1.0
     post-install:
-      - install -d /app/share/padforge/plugins
-      - cp -r plugins/lua/. /app/share/padforge/plugins/
+      - install -d /app/share/PadForge/plugins
+      - cp -r plugins/lua/. /app/share/PadForge/plugins/

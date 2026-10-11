@@ -26,8 +26,8 @@ cmake --build "${build_dir}"
 
 DESTDIR="${staging}" cmake --install "${build_dir}"
 install -Dm644 "${repo_root}/LICENSE" "${staging}/usr/share/licenses/padforge/LICENSE"
-mkdir -p "${staging}/usr/share/padforge/plugins"
-cp -r "${repo_root}/plugins/lua/." "${staging}/usr/share/padforge/plugins/"
+mkdir -p "${staging}/usr/share/PadForge/plugins"
+cp -r "${repo_root}/plugins/lua/." "${staging}/usr/share/PadForge/plugins/"
 
 mkdir -p "${staging}/DEBIAN"
 sed "s/^Version:.*/Version: ${version}/; s/^Architecture:.*/Architecture: ${arch}/" \

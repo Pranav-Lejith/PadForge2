@@ -946,16 +946,25 @@ void MainWindow::saveMacros()
 
 void MainWindow::loadPlugins()
 {
-    const QString dir = pluginsPath();
-    QDir().mkpath(dir);
-    m_pluginHost->setPluginDirectory(dir);
-    m_pluginHost->loadLuaPluginsIn(dir);
+    const QString userDir = pluginsPath();
+    QDir().mkpath(userDir);
+    m_pluginHost->setPluginDirectory(userDir);
 
-    const QString nativeDir = QCoreApplication::applicationDirPath() + QStringLiteral("/plugins");
-    QDir native(nativeDir);
-    for (const QString& entry : native.entryList({ QStringLiteral("*.so"), QStringLiteral("*.so.*") },
-                                                 QDir::Files)) {
-        m_pluginHost->loadNativePlugin(native.absoluteFilePath(entry));
+    QStringList dirs;
+    dirs << userDir;
+    for (const QString& base : QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation))
+        dirs << base + QStringLiteral("/PadForge/plugins");
+    dirs << QCoreApplication::applicationDirPath() + QStringLiteral("/plugins");
+
+    for (const QString& dir : dirs) {
+        QDir directory(dir);
+        if (!directory.exists())
+            continue;
+        m_pluginHost->loadLuaPluginsIn(dir);
+        for (const QString& entry :
+             directory.entryList({ QStringLiteral("*.so"), QStringLiteral("*.so.*") }, QDir::Files)) {
+            m_pluginHost->loadNativePlugin(directory.absoluteFilePath(entry));
+        }
     }
     showMessage(tr("Loaded %1 plugin(s).").arg(m_pluginHost->loadedPlugins().size()));
 }
