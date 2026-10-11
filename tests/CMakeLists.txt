@@ -13,6 +13,12 @@ padforge_add_test(test_search)
 padforge_add_test(test_session)
 padforge_add_test(test_macro)
 
+if(PADFORGE_ENABLE_LUA)
+    padforge_add_test(test_plugin)
+    target_compile_definitions(test_plugin PRIVATE
+        PADFORGE_TEST_PLUGIN_DIR="${CMAKE_SOURCE_DIR}/plugins/lua")
+endif()
+
 # Headless UI smoke test (only when the GUI target is available).
 if(TARGET padforge_gui)
     add_executable(test_smoke test_smoke.cpp)
