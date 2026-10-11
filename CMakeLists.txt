@@ -47,6 +47,19 @@ if(PADFORGE_BUILD_TESTS)
     add_subdirectory(tests)
 endif()
 
+# ---- Desktop integration --------------------------------------------------
+if(UNIX AND TARGET padforge)
+    install(FILES
+        "${CMAKE_CURRENT_SOURCE_DIR}/resources/org.padforge.PadForge.desktop"
+        DESTINATION share/applications)
+    install(FILES
+        "${CMAKE_CURRENT_SOURCE_DIR}/resources/icons/org.padforge.PadForge.svg"
+        DESTINATION share/icons/hicolor/scalable/apps)
+    install(FILES
+        "${CMAKE_CURRENT_SOURCE_DIR}/resources/org.padforge.PadForge.metainfo.xml"
+        DESTINATION share/metainfo)
+endif()
+
 # ---- Packaging metadata ---------------------------------------------------
 set(CPACK_PACKAGE_NAME "PadForge")
 set(CPACK_PACKAGE_VENDOR "PadForge contributors")

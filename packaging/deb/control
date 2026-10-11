@@ -1,0 +1,14 @@
+Package: padforge
+Version: 0.1.0
+Section: editors
+Priority: optional
+Architecture: amd64
+Depends: libqt6widgets6, libqt6gui6, libqt6core6, liblua5.4-0 | liblua5.3-0
+Maintainer: PadForge contributors <padforge@example.invalid>
+Homepage: https://github.com/padforge/padforge
+Installed-Size: 4096
+Description: Fast native text editor with a Notepad++-style workflow
+ PadForge is a native Linux text editor that brings the familiar Notepad++
+ workflow to the Qt 6 and Scintilla stack: tabbed documents, split view,
+ syntax highlighting for dozens of languages, find and replace with
+ find-in-files, bookmarks, macros and a small plugin runtime.

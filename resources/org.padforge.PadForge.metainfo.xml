@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.padforge.PadForge</id>
+  <name>PadForge</name>
+  <summary>Fast native text editor with a Notepad++-style workflow</summary>
+  <description>
+    <p>
+      PadForge is a native Linux text editor that brings the familiar
+      Notepad++ workflow to the Qt 6 and Scintilla stack. It offers tabbed
+      documents, split view, syntax highlighting for dozens of languages,
+      powerful find and replace including find-in-files, bookmarks, macros and
+      a small plugin runtime for Lua and native plugins.
+    </p>
+  </description>
+  <launchable type="desktop-id">org.padforge.PadForge.desktop</launchable>
+  <provides>
+    <binary>padforge</binary>
+  </provides>
+  <categories>
+    <category>Utility</category>
+    <category>TextEditor</category>
+    <category>Development</category>
+  </categories>
+  <url type="homepage">https://github.com/padforge/padforge</url>
+  <url type="bugtracker">https://github.com/padforge/padforge/issues</url>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="0.1.0" date="2026-10-11">
+      <description>
+        <p>Initial development release.</p>
+      </description>
+    </release>
+  </releases>
+</component>

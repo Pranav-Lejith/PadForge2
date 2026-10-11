@@ -1,0 +1,36 @@
+# Maintainer: PadForge contributors
+# Arch Linux PKGBUILD for PadForge.
+#
+# PadForge fetches pinned Scintilla and Lexilla sources at configure time, so
+# building needs network access (or a populated CMake FetchContent cache).
+
+pkgname=padforge
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Fast native text editor with a Notepad++-style workflow"
+arch=('x86_64' 'aarch64')
+url="https://github.com/padforge/padforge"
+license=('GPL-3.0-or-later')
+depends=('qt6-base' 'lua' 'hicolor-icon-theme')
+makedepends=('cmake' 'ninja' 'gcc' 'python')
+source=("$pkgname-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+    cmake -S "$pkgname-$pkgver" -B build -G Ninja \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_INSTALL_PREFIX=/usr
+    cmake --build build
+}
+
+check() {
+    QT_QPA_PLATFORM=offscreen ctest --test-dir build --output-on-failure
+}
+
+package() {
+    DESTDIR="$pkgdir" cmake --install build
+    install -Dm644 "$pkgname-$pkgver/LICENSE" \
+        "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+    install -d "$pkgdir/usr/share/$pkgname/plugins"
+    cp -r "$pkgname-$pkgver/plugins/lua/." "$pkgdir/usr/share/$pkgname/plugins/"
+}

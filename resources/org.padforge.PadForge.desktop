@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=PadForge
+GenericName=Text Editor
+Comment=Fast native text editor with a Notepad++-style workflow
+Exec=padforge %F
+TryExec=padforge
+Icon=org.padforge.PadForge
+Terminal=false
+Categories=Utility;TextEditor;
+Keywords=text;editor;notepad;code;programming;source;
+StartupNotify=true
+StartupWMClass=PadForge
+MimeType=text/plain;text/x-csrc;text/x-chdr;text/x-c++src;text/x-c++hdr;text/x-python;text/x-python3;text/x-java;text/x-csharp;text/x-perl;text/x-ruby;text/x-php;text/x-shellscript;application/javascript;text/javascript;text/html;text/css;text/x-scss;text/x-less;text/x-tex;text/x-markdown;text/markdown;application/json;application/xml;text/xml;text/x-yaml;text/x-makefile;text/x-cmake;text/x-diff;text/x-log;application/x-desktop;
