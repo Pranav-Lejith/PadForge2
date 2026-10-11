@@ -1,0 +1,49 @@
+# Upstream reference clone (study only, not part of PadForge)
+/upstream/
+
+# Build output
+/build/
+/build-*/
+cmake-build-*/
+*.o
+*.a
+*.so
+*.so.*
+*.dylib
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+_deps/
+install_manifest.txt
+
+# Qt
+*.moc
+moc_*.cpp
+qrc_*.cpp
+ui_*.h
+*.qmlc
+*.user
+
+# Packaging output
+/dist/
+*.deb
+*.rpm
+*.AppImage
+*.flatpak
+*.pkg.tar.zst
+packaging/arch/src/
+packaging/arch/pkg/
+packaging/flatpak/.flatpak-builder/
+packaging/appimage/AppDir/
+
+# Editor/OS
+*.swp
+*.swo
+*~
+.DS_Store
+.idea/
+.vscode/
+compile_commands.json

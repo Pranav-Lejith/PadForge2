@@ -1,0 +1,27 @@
+PadForge
+========
+
+PadForge is an independent, native Linux text editor that recreates the
+Notepad++ *workflow* (tabbed editing, session restore, find-in-files, macros,
+column mode, etc.) using the Qt 6 and Scintilla/Lexilla toolkits.
+
+Attribution
+-----------
+PadForge is *inspired by* Notepad++ (https://notepad-plus-plus.org/), a project
+created by Don Ho and licensed under the GNU GPL v3. PadForge contains **no
+Notepad++ source code, resources, or branding**. It was designed after studying
+Notepad++'s publicly documented feature set and its use of the Scintilla/Lexilla
+editing engine. We gratefully credit the Notepad++ project as the inspiration
+for the workflow this editor reproduces.
+
+Third-party components
+----------------------
+- Scintilla (https://www.scintilla.org/) - Historical Permission Notice and
+  Disclaimer (HPND), a permissive BSD/MIT-like license.
+- Lexilla (https://www.scintilla.org/Lexilla.html) - HPND.
+- Qt 6 (https://www.qt.io/) - LGPL v3 (used as a library).
+- Lua (https://www.lua.org/) - MIT license (optional plugin runtime).
+- nlohmann/json (https://github.com/nlohmann/json) - MIT license.
+
+PadForge itself is distributed under the GNU General Public License v3.0 or
+later. See LICENSE.
