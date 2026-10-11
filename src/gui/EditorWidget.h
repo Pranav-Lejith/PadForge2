@@ -2,9 +2,12 @@
 
 #include "Encoding.h"
 #include "SearchEngine.h"
+#include "Settings.h"
+#include "TextOps.h"
 #include "Theme.h"
 
 #include <QWidget>
+#include <functional>
 
 class ScintillaEdit;
 
@@ -52,6 +55,11 @@ public:
     void toggleBookmark();
     void clearBookmarks();
     void nextBookmark(bool forward = true);
+    void copyBookmarkedLines();
+    void cutBookmarkedLines();
+    void deleteBookmarkedLines();
+    void pasteToBookmarkedLines();
+    void invertBookmarks();
 
     void setLargeFile(bool large);
     bool isLargeFile() const { return m_largeFile; }
@@ -64,9 +72,60 @@ public:
 
     void applySavedState(int cursor, int anchor, int firstVisibleLine, const QList<int>& bookmarks);
 
+    // Text transformations (operate on the current selection, or the current
+    // line when there is no selection).
+    void duplicateCurrentLine();
+    void deleteCurrentLine();
+    void moveLineUp();
+    void moveLineDown();
+    void joinSelectedLines();
+    void splitSelectedLines();
+    void sortLinesAscending();
+    void sortLinesDescending();
+    void sortLinesAscendingCaseInsensitive();
+    void removeDuplicateLines();
+    void removeConsecutiveDuplicateLines();
+    void removeEmptyLines();
+    void convertCaseUpper();
+    void convertCaseLower();
+    void convertCaseTitle();
+    void convertCaseSentence();
+    void trimTrailingWhitespace();
+    void trimLeadingWhitespace();
+    void trimWhitespace();
+    void tabifySelection();
+    void untabifySelection();
+    void toggleLineComment();
+    void toggleBlockComment();
+
+    // Display and editing options (persisted across sessions).
+    void applySettings(const AppSettings& settings);
+    void setWordWrapEnabled(bool enabled);
+    void setShowLineNumbers(bool shown);
+    void setShowFoldMargin(bool shown);
+    void setShowBookmarkMargin(bool shown);
+    void setShowWhitespace(bool shown);
+    void setShowEol(bool shown);
+    void setShowIndentGuides(bool shown);
+    void setEdgeColumn(int column);
+    void setEditorFont(const QString& family, int size);
+    void setTabWidth(int width);
+    void setUseTabs(bool useTabs);
+    void setHighlightCurrentLine(bool highlighted);
+    void setAutoCloseBrackets(bool enabled);
+    void applyZoomFromSettings();
+
+    // Word completion.
+    void triggerCompletion();
+    void setWordCompletionEnabled(bool enabled);
+
 public slots:
     void findNextFromCursor(const QString& term, const SearchOptions& options);
-    void replaceCurrent(const QString& term, const QString& replacement, const SearchOptions& options);
+    void replaceCurrent(const QString& term, const QString& replacement,
+                        const SearchOptions& options);
+
+protected:
+    void contextMenuEvent(QContextMenuEvent* event) override;
 
 signals:
     void modificationChanged(bool dirty);
@@ -87,6 +146,14 @@ private:
     void applyLanguageToEditor();
     void emitDocumentChanged();
 
+    // Replaces the given character range with UTF-8 text and re-selects it.
+    void replaceRange(int start, int end, const QString& text);
+    // Returns the full-line range covering the selection (or the current line
+    // when there is no selection) as {startLine, endLine}.
+    QPair<int, int> selectedLineRange() const;
+    // Applies `transform` to the selected full-line text.
+    void applyToSelectedLines(std::function<QString(const QString&)> transform);
+
     ScintillaEdit* m_editor = nullptr;
     QString m_filePath;
     EncodingInfo m_encoding{Charset::Utf8, false};
@@ -94,6 +161,11 @@ private:
     QString m_languageId = QStringLiteral("text");
     bool m_largeFile = false;
     bool m_updating = false;
+    bool m_wordCompletionOn = true;
+    bool m_autoCloseBrackets = true;
+    int m_tabWidth = 4;
+    QString m_fontFamily = QStringLiteral("Monospace");
+    int m_fontSize = 11;
 };
 
 } // namespace PadForge

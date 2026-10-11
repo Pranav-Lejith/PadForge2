@@ -6,7 +6,17 @@ add_library(padforge_gui STATIC
     FindReplaceDialog.cpp
     FindReplaceDialog.h
     FindInFilesPanel.cpp
-    FindInFilesPanel.h)
+    FindInFilesPanel.h
+    PreferencesDialog.cpp
+    PreferencesDialog.h
+    ColumnEditorDialog.cpp
+    ColumnEditorDialog.h
+    GotoLineDialog.cpp
+    GotoLineDialog.h
+    DocumentSummaryDialog.cpp
+    DocumentSummaryDialog.h
+    RunDialog.cpp
+    RunDialog.h)
 
 target_include_directories(padforge_gui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(padforge_gui PUBLIC padforge_core PadForge::scintilla PadForge::lexilla Qt6::Widgets)

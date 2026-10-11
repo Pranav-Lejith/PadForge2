@@ -24,11 +24,18 @@ with [Lexilla](https://www.scintilla.org/Lexilla.html) for syntax highlighting.
 - **Find in Files**: search a directory tree with filters and jump to a hit.
 - **Bookmarks**, **code folding**, **line numbers**, **brace matching**,
   **auto-indent** and smart auto-close.
+- **Line tools**: delete/duplicate/move lines, join & split, sort, remove
+  duplicates, case conversion, trim whitespace, tabify/untabify.
+- **Column editor** (repeated text or numbered columns), **word completion**
+  (Ctrl+Space) and per-language **comment/uncomment**.
 - **Column / multi-cursor editing** mode.
 - **Macros**: record, save and replay editing sequences.
 - **Plugin runtime** for **Lua** scripts and **native** shared libraries through
   a small, stable C ABI.
-- **Light and dark themes** with per-language style mapping.
+- **Eight themes** (light, dark, Solarized ×2, Monokai, Dracula, Nord, Gruvbox)
+  with per-language style mapping, plus a **Preferences** dialog.
+- **Window** menu with `Alt+1..9` document jumps, split orientation, **full
+  screen** (F11), always-on-top and a **Run...** (F5) command runner.
 - **Session restore** and a recent-files list.
 
 ## Building

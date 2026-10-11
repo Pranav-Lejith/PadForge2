@@ -4,6 +4,7 @@
 #include "Macro.h"
 #include "PluginHost.h"
 #include "Session.h"
+#include "Settings.h"
 
 #include <QList>
 #include <QMainWindow>
@@ -19,6 +20,11 @@ namespace PadForge {
 class EditorWidget;
 class FindInFilesPanel;
 class FindReplaceDialog;
+class PreferencesDialog;
+class ColumnEditorDialog;
+class GotoLineDialog;
+class DocumentSummaryDialog;
+class RunDialog;
 
 class MainWindow : public QMainWindow, public PluginContext {
     Q_OBJECT
@@ -89,6 +95,18 @@ private:
     void moveToOtherView();
     void setTheme(const QString& id);
     void setWordWrap(bool enabled);
+    void showPreferences();
+    void showColumnEditor();
+    void showGotoLineDialog();
+    void showDocumentSummary();
+    void showRunDialog();
+    void toggleFullScreen();
+    void toggleAlwaysOnTop();
+    void setSplitOrientation(int orientation);
+    void nextTab(bool forward);
+    void selectTabByNumber(int number);
+    void updateWindowMenu();
+    void applySettingsToAll();
 
     // Session / recents / macros / plugins
     void loadSession();
@@ -125,16 +143,28 @@ private:
     QMenu* m_macroMenu = nullptr;
     QMenu* m_pluginsMenu = nullptr;
     QMenu* m_themeMenu = nullptr;
+    QMenu* m_windowMenu = nullptr;
 
     QAction* m_actWordWrap = nullptr;
     QAction* m_actSplitView = nullptr;
     QAction* m_actRecordMacro = nullptr;
+    QAction* m_actShowLineNumbers = nullptr;
+    QAction* m_actShowFoldMargin = nullptr;
+    QAction* m_actShowBookmarkMargin = nullptr;
+    QAction* m_actShowAllChars = nullptr;
+    QAction* m_actShowEol = nullptr;
+    QAction* m_actShowIndentGuides = nullptr;
+    QAction* m_actHighlightLine = nullptr;
+    QAction* m_actAlwaysOnTop = nullptr;
+    QAction* m_actSplitHorizontal = nullptr;
+    QAction* m_actSplitVertical = nullptr;
 
     RecentFiles m_recent{15};
     PluginHost* m_pluginHost = nullptr;
     MacroRecorder m_macroRecorder;
     QList<Macro> m_macros;
     QString m_themeId = QStringLiteral("light");
+    AppSettings m_settings;
     int m_untitledCounter = 0;
     int m_pluginMenuCount = 0;
 };

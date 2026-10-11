@@ -139,6 +139,66 @@ const QList<Language>& build()
     add("groovy", "Groovy", "cpp", {"groovy", "gradle"}, {}, kJavaKeywords);
     add("toml", "TOML", "props", {"toml"});
 
+    auto setComments = [&](const char* id, const char* line, const char* blockStart = "",
+                           const char* blockEnd = "") {
+        for (Language& language : langs) {
+            if (language.id == QLatin1String(id)) {
+                language.lineComment = QString::fromLatin1(line);
+                language.blockCommentStart = QString::fromLatin1(blockStart);
+                language.blockCommentEnd = QString::fromLatin1(blockEnd);
+                return;
+            }
+        }
+    };
+
+    setComments("c", "//", "/*", "*/");
+    setComments("cpp", "//", "/*", "*/");
+    setComments("objectivec", "//", "/*", "*/");
+    setComments("csharp", "//", "/*", "*/");
+    setComments("java", "//", "/*", "*/");
+    setComments("javascript", "//", "/*", "*/");
+    setComments("typescript", "//", "/*", "*/");
+    setComments("swift", "//", "/*", "*/");
+    setComments("go", "//", "/*", "*/");
+    setComments("rust", "//", "/*", "*/");
+    setComments("kotlin", "//", "/*", "*/");
+    setComments("d", "//", "/*", "*/");
+    setComments("groovy", "//", "/*", "*/");
+    setComments("php", "//", "/*", "*/");
+    setComments("python", "#");
+    setComments("shell", "#");
+    setComments("bash", "#");
+    setComments("perl", "#");
+    setComments("ruby", "#");
+    setComments("yaml", "#");
+    setComments("makefile", "#");
+    setComments("cmake", "#");
+    setComments("tcl", "#");
+    setComments("r", "#");
+    setComments("toml", "#");
+    setComments("ini", ";");
+    setComments("lua", "--", "--[[", "]]");
+    setComments("sql", "--", "/*", "*/");
+    setComments("haskell", "--", "{-", "-}");
+    setComments("ada", "--");
+    setComments("vhdl", "--");
+    setComments("latex", "%");
+    setComments("matlab", "%", "%{", "%}");
+    setComments("pascal", "//", "{", "}");
+    setComments("fortran", "!");
+    setComments("vb", "'");
+    setComments("batch", "::");
+    setComments("powershell", "#", "<#", "#>");
+    setComments("fsharp", "//", "(*", "*)");
+    setComments("erlang", "%");
+    setComments("lisp", ";");
+    setComments("scheme", ";");
+    setComments("asm", ";");
+    setComments("css", "", "/*", "*/");
+    setComments("html", "", "<!--", "-->");
+    setComments("xml", "", "<!--", "-->");
+    setComments("nsis", ";", "/*", "*/");
+
     return langs;
 }
 

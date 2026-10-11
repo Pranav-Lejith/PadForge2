@@ -1,20 +1,24 @@
 #include "MainWindow.h"
 
+#include "ColumnEditorDialog.h"
+#include "DocumentSummaryDialog.h"
 #include "EditorWidget.h"
 #include "Encoding.h"
 #include "FindInFilesPanel.h"
 #include "FindReplaceDialog.h"
+#include "GotoLineDialog.h"
 #include "LanguageManager.h"
+#include "PreferencesDialog.h"
+#include "RunDialog.h"
 #include "SearchEngine.h"
+#include "TextOps.h"
 #include "Theme.h"
-
-#include <ScintillaEdit.h>
-#include <Scintilla.h>
 
 #include <QAction>
 #include <QApplication>
 #include <QCloseEvent>
 #include <QCoreApplication>
+#include <QDialog>
 #include <QDir>
 #include <QDockWidget>
 #include <QFileDialog>
@@ -31,28 +35,30 @@
 #include <QStatusBar>
 #include <QTabWidget>
 #include <QToolBar>
+#include <Scintilla.h>
+#include <ScintillaEdit.h>
+#include <algorithm>
 
 namespace PadForge {
 
 namespace {
 
-QString recentPath()
-{
-    return QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
-        + QStringLiteral("/recent.json");
+QString recentPath() {
+    return QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) +
+           QStringLiteral("/recent.json");
 }
 
-QString pluginsPath()
-{
-    return QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation)
-        + QStringLiteral("/plugins");
+QString pluginsPath() {
+    return QStandardPaths::writableLocation(QStandardPaths::AppConfigLocation) +
+           QStringLiteral("/plugins");
 }
 
 } // namespace
 
-MainWindow::MainWindow(QWidget* parent)
-    : QMainWindow(parent)
-{
+MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
+    m_settings.load();
+    m_themeId = m_settings.theme;
+
     setWindowTitle(QStringLiteral("PadForge"));
     resize(1100, 720);
 
@@ -76,21 +82,27 @@ MainWindow::MainWindow(QWidget* parent)
             m_activeTabs = m_mainTabs;
         updateWindowTitle();
         updateStatus();
+        updateWindowMenu();
     });
     connect(m_subTabs, &QTabWidget::currentChanged, this, [this](int) {
         if (m_subTabs->currentWidget())
             m_activeTabs = m_subTabs;
         updateWindowTitle();
         updateStatus();
+        updateWindowMenu();
     });
-    connect(m_mainTabs, &QTabWidget::tabCloseRequested, this,
-            [this](int index) { closeEditor(qobject_cast<EditorWidget*>(m_mainTabs->widget(index))); });
-    connect(m_subTabs, &QTabWidget::tabCloseRequested, this,
-            [this](int index) { closeEditor(qobject_cast<EditorWidget*>(m_subTabs->widget(index))); });
+    connect(m_mainTabs, &QTabWidget::tabCloseRequested, this, [this](int index) {
+        closeEditor(qobject_cast<EditorWidget*>(m_mainTabs->widget(index)));
+    });
+    connect(m_subTabs, &QTabWidget::tabCloseRequested, this, [this](int index) {
+        closeEditor(qobject_cast<EditorWidget*>(m_subTabs->widget(index)));
+    });
 
     m_findDialog = new FindReplaceDialog(this);
-    connect(m_findDialog, &FindReplaceDialog::findNextRequested, this, [this]() { findNext(false); });
-    connect(m_findDialog, &FindReplaceDialog::findPreviousRequested, this, [this]() { findNext(true); });
+    connect(m_findDialog, &FindReplaceDialog::findNextRequested, this,
+            [this]() { findNext(false); });
+    connect(m_findDialog, &FindReplaceDialog::findPreviousRequested, this,
+            [this]() { findNext(true); });
     connect(m_findDialog, &FindReplaceDialog::replaceRequested, this, &MainWindow::replaceOne);
     connect(m_findDialog, &FindReplaceDialog::replaceAllRequested, this, &MainWindow::replaceAll);
     connect(m_findDialog, &FindReplaceDialog::countRequested, this, &MainWindow::countMatches);
@@ -114,35 +126,32 @@ MainWindow::MainWindow(QWidget* parent)
         newDocument();
 }
 
-MainWindow::~MainWindow()
-{
+MainWindow::~MainWindow() {
     delete m_pluginHost;
 }
 
-EditorWidget* MainWindow::createEditor()
-{
+EditorWidget* MainWindow::createEditor() {
     auto* editor = new EditorWidget();
+    editor->applySettings(m_settings);
     return editor;
 }
 
-EditorWidget* MainWindow::currentEditor() const
-{
+EditorWidget* MainWindow::currentEditor() const {
     if (!m_activeTabs)
         return nullptr;
     return qobject_cast<EditorWidget*>(m_activeTabs->currentWidget());
 }
 
-void MainWindow::addEditor(EditorWidget* editor, QTabWidget* view)
-{
+void MainWindow::addEditor(EditorWidget* editor, QTabWidget* view) {
     view->addTab(editor, tr("Untitled"));
     view->setCurrentWidget(editor);
     m_activeTabs = view;
     registerEditor(editor);
     updateTabTitle(editor);
+    updateWindowMenu();
 }
 
-void MainWindow::registerEditor(EditorWidget* editor)
-{
+void MainWindow::registerEditor(EditorWidget* editor) {
     m_editors.append(editor);
     connect(editor, &EditorWidget::modificationChanged, this, [this, editor](bool) {
         updateTabTitle(editor);
@@ -174,8 +183,7 @@ void MainWindow::registerEditor(EditorWidget* editor)
     });
 }
 
-EditorWidget* MainWindow::newDocument(const QString& text, const QString& path)
-{
+EditorWidget* MainWindow::newDocument(const QString& text, const QString& path) {
     EditorWidget* editor = createEditor();
     if (!text.isEmpty())
         editor->setDocumentText(text);
@@ -190,12 +198,10 @@ EditorWidget* MainWindow::newDocument(const QString& text, const QString& path)
     return editor;
 }
 
-EditorWidget* MainWindow::openPath(const QString& path, bool switchTo)
-{
+EditorWidget* MainWindow::openPath(const QString& path, bool switchTo) {
     const QString clean = QDir::cleanPath(path);
     for (EditorWidget* editor : m_editors) {
-        if (!editor->filePath().isEmpty()
-            && QDir::cleanPath(editor->filePath()) == clean) {
+        if (!editor->filePath().isEmpty() && QDir::cleanPath(editor->filePath()) == clean) {
             if (switchTo) {
                 auto* tabs = qobject_cast<QTabWidget*>(editor->parentWidget());
                 if (tabs) {
@@ -221,20 +227,19 @@ EditorWidget* MainWindow::openPath(const QString& path, bool switchTo)
     return editor;
 }
 
-void MainWindow::openPaths(const QStringList& paths)
-{
+void MainWindow::openPaths(const QStringList& paths) {
     for (const QString& path : paths)
         openPath(path);
 }
 
-void MainWindow::closeEditor(EditorWidget* editor)
-{
+void MainWindow::closeEditor(EditorWidget* editor) {
     if (!editor)
         return;
     auto* tabs = qobject_cast<QTabWidget*>(editor->parentWidget());
     if (editor->isModified()) {
-        const QString name = editor->filePath().isEmpty() ? tr("Untitled")
-                                                          : QFileInfo(editor->filePath()).fileName();
+        const QString name = editor->filePath().isEmpty()
+                                 ? tr("Untitled")
+                                 : QFileInfo(editor->filePath()).fileName();
         const auto choice = QMessageBox::question(
             this, tr("Save changes"),
             tr("Do you want to save the changes you made to \"%1\"?").arg(name),
@@ -256,53 +261,51 @@ void MainWindow::closeEditor(EditorWidget* editor)
         tabs->removeTab(tabs->indexOf(editor));
     m_editors.removeAll(editor);
     editor->deleteLater();
+    updateWindowMenu();
     updateWindowTitle();
 }
 
-void MainWindow::updateTabTitle(EditorWidget* editor)
-{
+void MainWindow::updateTabTitle(EditorWidget* editor) {
     auto* tabs = qobject_cast<QTabWidget*>(editor->parentWidget());
     if (!tabs)
         return;
     const int index = tabs->indexOf(editor);
     if (index < 0)
         return;
-    QString name = editor->filePath().isEmpty() ? tr("Untitled")
-                                                : QFileInfo(editor->filePath()).fileName();
+    QString name =
+        editor->filePath().isEmpty() ? tr("Untitled") : QFileInfo(editor->filePath()).fileName();
     if (editor->isModified())
         name += QStringLiteral(" *");
     tabs->setTabText(index, name);
     tabs->setTabToolTip(index, editor->filePath());
 }
 
-void MainWindow::updateWindowTitle()
-{
+void MainWindow::updateWindowTitle() {
     EditorWidget* editor = currentEditor();
     if (!editor) {
         setWindowTitle(QStringLiteral("PadForge"));
         return;
     }
-    QString name = editor->filePath().isEmpty() ? tr("Untitled")
-                                               : QFileInfo(editor->filePath()).fileName();
+    QString name =
+        editor->filePath().isEmpty() ? tr("Untitled") : QFileInfo(editor->filePath()).fileName();
     if (editor->isModified())
         name += QStringLiteral(" *");
     setWindowTitle(QStringLiteral("%1 - PadForge").arg(name));
 }
 
-void MainWindow::updateStatus()
-{
+void MainWindow::updateStatus() {
     EditorWidget* editor = currentEditor();
     if (!editor)
         return;
-    m_statusPosition->setText(tr("Ln %1, Col %2").arg(editor->currentLine()).arg(editor->currentColumn()));
+    m_statusPosition->setText(
+        tr("Ln %1, Col %2").arg(editor->currentLine()).arg(editor->currentColumn()));
     m_statusEncoding->setText(editor->encoding().displayName());
     m_statusEol->setText(EncodingDetector::eolName(editor->eol()));
     const Language* language = LanguageManager::byId(editor->languageId());
     m_statusLanguage->setText(language ? language->name : QStringLiteral("Normal Text"));
 }
 
-void MainWindow::closeEvent(QCloseEvent* event)
-{
+void MainWindow::closeEvent(QCloseEvent* event) {
     for (EditorWidget* editor : QList<EditorWidget*>(m_editors)) {
         auto* tabs = qobject_cast<QTabWidget*>(editor->parentWidget());
         if (editor->isModified()) {
@@ -334,18 +337,107 @@ void MainWindow::closeEvent(QCloseEvent* event)
     }
     saveSession();
     saveMacros();
+    m_settings.save();
     event->accept();
 }
 
-void MainWindow::createActions()
-{
+void MainWindow::createActions() {
     m_actWordWrap = new QAction(tr("Word wrap"), this);
     m_actWordWrap->setCheckable(true);
-    connect(m_actWordWrap, &QAction::toggled, this, &MainWindow::setWordWrap);
+    m_actWordWrap->setChecked(m_settings.wordWrap);
+    connect(m_actWordWrap, &QAction::toggled, this, [this](bool on) {
+        m_settings.wordWrap = on;
+        applySettingsToAll();
+        m_settings.save();
+    });
 
     m_actSplitView = new QAction(tr("Split view"), this);
     m_actSplitView->setCheckable(true);
     connect(m_actSplitView, &QAction::toggled, this, &MainWindow::toggleSplitView);
+
+    m_actShowLineNumbers = new QAction(tr("Line numbers"), this);
+    m_actShowLineNumbers->setCheckable(true);
+    m_actShowLineNumbers->setChecked(m_settings.showLineNumbers);
+    connect(m_actShowLineNumbers, &QAction::toggled, this, [this](bool on) {
+        m_settings.showLineNumbers = on;
+        applySettingsToAll();
+        m_settings.save();
+    });
+
+    m_actShowFoldMargin = new QAction(tr("Folding margin"), this);
+    m_actShowFoldMargin->setCheckable(true);
+    m_actShowFoldMargin->setChecked(m_settings.showFoldMargin);
+    connect(m_actShowFoldMargin, &QAction::toggled, this, [this](bool on) {
+        m_settings.showFoldMargin = on;
+        applySettingsToAll();
+        m_settings.save();
+    });
+
+    m_actShowBookmarkMargin = new QAction(tr("Bookmark margin"), this);
+    m_actShowBookmarkMargin->setCheckable(true);
+    m_actShowBookmarkMargin->setChecked(m_settings.showBookmarkMargin);
+    connect(m_actShowBookmarkMargin, &QAction::toggled, this, [this](bool on) {
+        m_settings.showBookmarkMargin = on;
+        applySettingsToAll();
+        m_settings.save();
+    });
+
+    m_actShowAllChars = new QAction(tr("Show all characters"), this);
+    m_actShowAllChars->setCheckable(true);
+    m_actShowAllChars->setChecked(m_settings.showWhitespace);
+    connect(m_actShowAllChars, &QAction::toggled, this, [this](bool on) {
+        m_settings.showWhitespace = on;
+        applySettingsToAll();
+        m_settings.save();
+    });
+
+    m_actShowEol = new QAction(tr("Show line endings"), this);
+    m_actShowEol->setCheckable(true);
+    m_actShowEol->setChecked(m_settings.showEol);
+    connect(m_actShowEol, &QAction::toggled, this, [this](bool on) {
+        m_settings.showEol = on;
+        applySettingsToAll();
+        m_settings.save();
+    });
+
+    m_actShowIndentGuides = new QAction(tr("Indentation guides"), this);
+    m_actShowIndentGuides->setCheckable(true);
+    m_actShowIndentGuides->setChecked(m_settings.showIndentGuides);
+    connect(m_actShowIndentGuides, &QAction::toggled, this, [this](bool on) {
+        m_settings.showIndentGuides = on;
+        applySettingsToAll();
+        m_settings.save();
+    });
+
+    m_actHighlightLine = new QAction(tr("Highlight current line"), this);
+    m_actHighlightLine->setCheckable(true);
+    m_actHighlightLine->setChecked(m_settings.highlightCurrentLine);
+    connect(m_actHighlightLine, &QAction::toggled, this, [this](bool on) {
+        m_settings.highlightCurrentLine = on;
+        applySettingsToAll();
+        m_settings.save();
+    });
+
+    m_actAlwaysOnTop = new QAction(tr("Always on top"), this);
+    m_actAlwaysOnTop->setCheckable(true);
+    m_actAlwaysOnTop->setChecked(m_settings.alwaysOnTop);
+    connect(m_actAlwaysOnTop, &QAction::toggled, this, &MainWindow::toggleAlwaysOnTop);
+
+    m_actSplitHorizontal = new QAction(tr("Split horizontally"), this);
+    m_actSplitHorizontal->setCheckable(true);
+    m_actSplitHorizontal->setChecked(m_settings.splitOrientation == 0);
+    connect(m_actSplitHorizontal, &QAction::toggled, this, [this](bool on) {
+        if (on)
+            setSplitOrientation(0);
+    });
+
+    m_actSplitVertical = new QAction(tr("Split vertically"), this);
+    m_actSplitVertical->setCheckable(true);
+    m_actSplitVertical->setChecked(m_settings.splitOrientation == 1);
+    connect(m_actSplitVertical, &QAction::toggled, this, [this](bool on) {
+        if (on)
+            setSplitOrientation(1);
+    });
 
     m_actRecordMacro = new QAction(tr("Start recording"), this);
     connect(m_actRecordMacro, &QAction::triggered, this, [this]() {
@@ -356,8 +448,7 @@ void MainWindow::createActions()
     });
 }
 
-void MainWindow::createMenus()
-{
+void MainWindow::createMenus() {
     QMenuBar* bar = menuBar();
 
     QMenu* fileMenu = bar->addMenu(tr("&File"));
@@ -393,13 +484,10 @@ void MainWindow::createMenus()
         bool bom;
     };
     const EncodingChoice encodings[] = {
-        { "UTF-8", Charset::Utf8, false },
-        { "UTF-8 with BOM", Charset::Utf8Bom, true },
-        { "UTF-16 LE", Charset::Utf16LE, true },
-        { "UTF-16 BE", Charset::Utf16BE, true },
-        { "UTF-32 LE", Charset::Utf32LE, true },
-        { "UTF-32 BE", Charset::Utf32BE, true },
-        { "Latin-1", Charset::Latin1, false },
+        {"UTF-8", Charset::Utf8, false},       {"UTF-8 with BOM", Charset::Utf8Bom, true},
+        {"UTF-16 LE", Charset::Utf16LE, true}, {"UTF-16 BE", Charset::Utf16BE, true},
+        {"UTF-32 LE", Charset::Utf32LE, true}, {"UTF-32 BE", Charset::Utf32BE, true},
+        {"Latin-1", Charset::Latin1, false},
     };
     for (const EncodingChoice& choice : encodings) {
         const Charset charset = choice.charset;
@@ -440,7 +528,8 @@ void MainWindow::createMenus()
     addEditorAction(editMenu, tr("Cu&t"), QKeySequence::Cut, &ScintillaEdit::cut);
     addEditorAction(editMenu, tr("&Copy"), QKeySequence::Copy, &ScintillaEdit::copy);
     addEditorAction(editMenu, tr("&Paste"), QKeySequence::Paste, &ScintillaEdit::paste);
-    addEditorAction(editMenu, tr("Select &All"), QKeySequence::SelectAll, &ScintillaEdit::selectAll);
+    addEditorAction(editMenu, tr("Select &All"), QKeySequence::SelectAll,
+                    &ScintillaEdit::selectAll);
     editMenu->addSeparator();
     QAction* aFind = editMenu->addAction(tr("&Find..."));
     aFind->setShortcut(QKeySequence::Find);
@@ -490,6 +579,146 @@ void MainWindow::createMenus()
         if (EditorWidget* editor = currentEditor())
             editor->clearBookmarks();
     });
+    QAction* aCopyBookmarked = editMenu->addAction(tr("Copy Bookmarked Lines"));
+    connect(aCopyBookmarked, &QAction::triggered, this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->copyBookmarkedLines();
+    });
+    QAction* aCutBookmarked = editMenu->addAction(tr("Cut Bookmarked Lines"));
+    connect(aCutBookmarked, &QAction::triggered, this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->cutBookmarkedLines();
+    });
+    QAction* aDeleteBookmarked = editMenu->addAction(tr("Delete Bookmarked Lines"));
+    connect(aDeleteBookmarked, &QAction::triggered, this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->deleteBookmarkedLines();
+    });
+    QAction* aPasteBookmarked = editMenu->addAction(tr("Paste to Every Bookmarked Line"));
+    connect(aPasteBookmarked, &QAction::triggered, this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->pasteToBookmarkedLines();
+    });
+    QAction* aInvertBookmarks = editMenu->addAction(tr("Invert Bookmarks"));
+    connect(aInvertBookmarks, &QAction::triggered, this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->invertBookmarks();
+    });
+
+    editMenu->addSeparator();
+    auto* commentMenu = editMenu->addMenu(tr("Co&mment/Uncomment"));
+    QAction* aLineComment = commentMenu->addAction(tr("Toggle Line Comment"));
+    aLineComment->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+C")));
+    connect(aLineComment, &QAction::triggered, this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->toggleLineComment();
+    });
+    QAction* aBlockComment = commentMenu->addAction(tr("Toggle Block Comment"));
+    aBlockComment->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+B")));
+    connect(aBlockComment, &QAction::triggered, this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->toggleBlockComment();
+    });
+
+    auto addTransform = [this, editMenu](const QString& label, void (EditorWidget::*fn)()) {
+        QAction* action = editMenu->addAction(label);
+        connect(action, &QAction::triggered, this, [this, fn]() {
+            if (EditorWidget* editor = currentEditor())
+                (editor->*fn)();
+        });
+    };
+    editMenu->addSeparator();
+    QAction* aDuplicateLine = editMenu->addAction(tr("Duplicate Current Line"));
+    aDuplicateLine->setShortcut(QKeySequence(QStringLiteral("Ctrl+D")));
+    connect(aDuplicateLine, &QAction::triggered, this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->duplicateCurrentLine();
+    });
+    addTransform(tr("Delete Current Line"), &EditorWidget::deleteCurrentLine);
+    addTransform(tr("Move Current Line Up"), &EditorWidget::moveLineUp);
+    addTransform(tr("Move Current Line Down"), &EditorWidget::moveLineDown);
+    addTransform(tr("Join Lines"), &EditorWidget::joinSelectedLines);
+    addTransform(tr("Split Lines"), &EditorWidget::splitSelectedLines);
+
+    auto* sortMenu = editMenu->addMenu(tr("S&ort Lines"));
+    sortMenu->addAction(tr("Ascending (case sensitive)"), this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->sortLinesAscending();
+    });
+    sortMenu->addAction(tr("Ascending (case insensitive)"), this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->sortLinesAscendingCaseInsensitive();
+    });
+    sortMenu->addAction(tr("Descending"), this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->sortLinesDescending();
+    });
+
+    auto* removeMenu = editMenu->addMenu(tr("Remove Lines"));
+    removeMenu->addAction(tr("Remove Duplicate Lines"), this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->removeDuplicateLines();
+    });
+    removeMenu->addAction(tr("Remove Consecutive Duplicate Lines"), this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->removeConsecutiveDuplicateLines();
+    });
+    removeMenu->addAction(tr("Remove Empty Lines"), this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->removeEmptyLines();
+    });
+
+    auto* caseMenu = editMenu->addMenu(tr("Change Case"));
+    caseMenu->addAction(tr("UPPER CASE"), this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->convertCaseUpper();
+    });
+    caseMenu->addAction(tr("lower case"), this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->convertCaseLower();
+    });
+    caseMenu->addAction(tr("Title Case"), this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->convertCaseTitle();
+    });
+    caseMenu->addAction(tr("Sentence case"), this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->convertCaseSentence();
+    });
+
+    auto* trimMenu = editMenu->addMenu(tr("Trim Trailing/Leading Space"));
+    trimMenu->addAction(tr("Trim Trailing Space"), this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->trimTrailingWhitespace();
+    });
+    trimMenu->addAction(tr("Trim Leading Space"), this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->trimLeadingWhitespace();
+    });
+    trimMenu->addAction(tr("Trim Both"), this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->trimWhitespace();
+    });
+
+    addTransform(tr("Tabify"), &EditorWidget::tabifySelection);
+    addTransform(tr("Untabify"), &EditorWidget::untabifySelection);
+
+    QAction* aColumnEditor = editMenu->addAction(tr("Column Editor..."));
+    aColumnEditor->setShortcut(QKeySequence(QStringLiteral("Ctrl+Alt+C")));
+    connect(aColumnEditor, &QAction::triggered, this, &MainWindow::showColumnEditor);
+
+    editMenu->addSeparator();
+    QAction* aGoto = editMenu->addAction(tr("Go to &Line..."));
+    aGoto->setShortcut(QKeySequence(QStringLiteral("Ctrl+G")));
+    connect(aGoto, &QAction::triggered, this, &MainWindow::showGotoLineDialog);
+    QAction* aSummary = editMenu->addAction(tr("Document &Summary..."));
+    connect(aSummary, &QAction::triggered, this, &MainWindow::showDocumentSummary);
+    QAction* aWordCompletion = editMenu->addAction(tr("Word Completion"));
+    aWordCompletion->setShortcut(QKeySequence(QStringLiteral("Ctrl+Space")));
+    connect(aWordCompletion, &QAction::triggered, this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->triggerCompletion();
+    });
 
     m_macroMenu = editMenu->addMenu(tr("&Macro"));
     m_macroMenu->addAction(m_actRecordMacro);
@@ -509,8 +738,19 @@ void MainWindow::createMenus()
     viewMenu->addSeparator();
     viewMenu->addAction(m_actWordWrap);
     viewMenu->addAction(m_actSplitView);
+    viewMenu->addAction(m_actShowLineNumbers);
+    viewMenu->addAction(m_actShowFoldMargin);
+    viewMenu->addAction(m_actShowBookmarkMargin);
+    viewMenu->addAction(m_actShowAllChars);
+    viewMenu->addAction(m_actShowEol);
+    viewMenu->addAction(m_actShowIndentGuides);
+    viewMenu->addAction(m_actHighlightLine);
     QAction* aMoveView = viewMenu->addAction(tr("Move to Other View"));
     connect(aMoveView, &QAction::triggered, this, &MainWindow::moveToOtherView);
+    viewMenu->addSeparator();
+    QMenu* orientationMenu = viewMenu->addMenu(tr("Split Orientation"));
+    orientationMenu->addAction(m_actSplitHorizontal);
+    orientationMenu->addAction(m_actSplitVertical);
     viewMenu->addSeparator();
     QAction* aZoomIn = viewMenu->addAction(tr("Zoom &In"));
     aZoomIn->setShortcut(QKeySequence::ZoomIn);
@@ -529,12 +769,14 @@ void MainWindow::createMenus()
         if (EditorWidget* editor = currentEditor())
             editor->setZoom(0);
     });
-    QAction* aWhitespace = viewMenu->addAction(tr("Show All Characters"));
-    aWhitespace->setCheckable(true);
-    connect(aWhitespace, &QAction::toggled, this, [this](bool on) {
-        if (EditorWidget* editor = currentEditor())
-            editor->editor()->send(SCI_SETVIEWWS, on ? SCWS_VISIBLEALWAYS : SCWS_INVISIBLE);
-    });
+    viewMenu->addSeparator();
+    QAction* aAlwaysOnTop = viewMenu->addAction(m_actAlwaysOnTop->text());
+    aAlwaysOnTop->setCheckable(true);
+    aAlwaysOnTop->setChecked(m_actAlwaysOnTop->isChecked());
+    connect(aAlwaysOnTop, &QAction::toggled, m_actAlwaysOnTop, &QAction::setChecked);
+    QAction* aFullScreen = viewMenu->addAction(tr("Full Screen"));
+    aFullScreen->setShortcut(QKeySequence(QStringLiteral("F11")));
+    connect(aFullScreen, &QAction::triggered, this, &MainWindow::toggleFullScreen);
 
     m_languageMenu = bar->addMenu(tr("&Language"));
     QAction* aDetect = m_languageMenu->addAction(tr("Detect from Content"));
@@ -551,13 +793,33 @@ void MainWindow::createMenus()
         });
     }
 
+    QMenu* settingsMenu = bar->addMenu(tr("&Settings"));
+    QAction* aRun = settingsMenu->addAction(tr("&Run..."));
+    aRun->setShortcut(QKeySequence(QStringLiteral("F5")));
+    connect(aRun, &QAction::triggered, this, &MainWindow::showRunDialog);
+    settingsMenu->addSeparator();
+    QAction* aPreferences = settingsMenu->addAction(tr("&Preferences..."));
+    aPreferences->setShortcut(QKeySequence::Preferences);
+    connect(aPreferences, &QAction::triggered, this, &MainWindow::showPreferences);
+
+    m_windowMenu = bar->addMenu(tr("&Window"));
+    QAction* aNextTab = m_windowMenu->addAction(tr("Next Tab"));
+    aNextTab->setShortcut(QKeySequence(QStringLiteral("Ctrl+Tab")));
+    connect(aNextTab, &QAction::triggered, this, [this]() { nextTab(true); });
+    QAction* aPrevTab = m_windowMenu->addAction(tr("Previous Tab"));
+    aPrevTab->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+Tab")));
+    connect(aPrevTab, &QAction::triggered, this, [this]() { nextTab(false); });
+    m_windowMenu->addAction(m_actSplitView);
+    m_windowMenu->addAction(aMoveView);
+    m_windowMenu->addSeparator();
+    updateWindowMenu();
+
     QMenu* helpMenu = bar->addMenu(tr("&Help"));
     QAction* aAbout = helpMenu->addAction(tr("&About PadForge"));
     connect(aAbout, &QAction::triggered, this, &MainWindow::showAbout);
 }
 
-void MainWindow::createToolbar()
-{
+void MainWindow::createToolbar() {
     QToolBar* toolbar = addToolBar(tr("Main"));
     toolbar->setObjectName(QStringLiteral("mainToolbar"));
     toolbar->setMovable(false);
@@ -573,8 +835,7 @@ void MainWindow::createToolbar()
     toolbar->addAction(tr("Find in Files"), this, [this]() { m_findDock->show(); });
 }
 
-void MainWindow::createStatusBar()
-{
+void MainWindow::createStatusBar() {
     m_statusLanguage = new QLabel(this);
     m_statusEncoding = new QLabel(this);
     m_statusEol = new QLabel(this);
@@ -585,8 +846,7 @@ void MainWindow::createStatusBar()
     statusBar()->addPermanentWidget(m_statusPosition);
 }
 
-void MainWindow::createDocks()
-{
+void MainWindow::createDocks() {
     m_findInFilesPanel = new FindInFilesPanel(this);
     m_findDock = new QDockWidget(tr("Find in Files"), this);
     m_findDock->setObjectName(QStringLiteral("findInFilesDock"));
@@ -596,27 +856,23 @@ void MainWindow::createDocks()
     connect(m_findInFilesPanel, &FindInFilesPanel::resultActivated, this, &MainWindow::gotoResult);
 }
 
-void MainWindow::createPluginMenu()
-{
+void MainWindow::createPluginMenu() {
     m_pluginsMenu = menuBar()->addMenu(tr("&Plugins"));
     QAction* reload = m_pluginsMenu->addAction(tr("Reload Plugins"));
     connect(reload, &QAction::triggered, this, &MainWindow::loadPlugins);
     m_pluginsMenu->addSeparator();
 }
 
-void MainWindow::newDocumentDialog()
-{
+void MainWindow::newDocumentDialog() {
     newDocument();
 }
 
-void MainWindow::openFilesDialog()
-{
+void MainWindow::openFilesDialog() {
     const QStringList files = QFileDialog::getOpenFileNames(this, tr("Open File"));
     openPaths(files);
 }
 
-void MainWindow::saveCurrent()
-{
+void MainWindow::saveCurrent() {
     EditorWidget* editor = currentEditor();
     if (!editor)
         return;
@@ -629,8 +885,7 @@ void MainWindow::saveCurrent()
         QMessageBox::warning(this, tr("PadForge"), tr("Cannot save file:\n%1").arg(error));
 }
 
-void MainWindow::saveCurrentAs()
-{
+void MainWindow::saveCurrentAs() {
     EditorWidget* editor = currentEditor();
     if (!editor)
         return;
@@ -642,8 +897,7 @@ void MainWindow::saveCurrentAs()
         QMessageBox::warning(this, tr("PadForge"), tr("Cannot save file:\n%1").arg(error));
 }
 
-void MainWindow::saveAll()
-{
+void MainWindow::saveAll() {
     for (EditorWidget* editor : m_editors) {
         if (!editor->isModified())
             continue;
@@ -661,8 +915,7 @@ void MainWindow::saveAll()
     }
 }
 
-void MainWindow::reloadCurrent()
-{
+void MainWindow::reloadCurrent() {
     EditorWidget* editor = currentEditor();
     if (!editor || editor->filePath().isEmpty())
         return;
@@ -672,25 +925,21 @@ void MainWindow::reloadCurrent()
     editor->gotoLine(line);
 }
 
-void MainWindow::setEncodingForCurrent(const EncodingInfo& encoding, bool reencode)
-{
+void MainWindow::setEncodingForCurrent(const EncodingInfo& encoding, bool reencode) {
     if (EditorWidget* editor = currentEditor())
         editor->setEncoding(encoding, reencode);
 }
 
-void MainWindow::setEolForCurrent(Eol eol)
-{
+void MainWindow::setEolForCurrent(Eol eol) {
     if (EditorWidget* editor = currentEditor())
         editor->setEol(eol);
 }
 
-void MainWindow::showFindDialog()
-{
+void MainWindow::showFindDialog() {
     m_findDialog->show();
 }
 
-void MainWindow::findNext(bool up)
-{
+void MainWindow::findNext(bool up) {
     EditorWidget* editor = currentEditor();
     if (!editor)
         return;
@@ -699,16 +948,15 @@ void MainWindow::findNext(bool up)
     editor->findNextFromCursor(m_findDialog->term(), options);
 }
 
-void MainWindow::replaceOne()
-{
+void MainWindow::replaceOne() {
     EditorWidget* editor = currentEditor();
     if (!editor)
         return;
-    editor->replaceCurrent(m_findDialog->term(), m_findDialog->replacement(), m_findDialog->options());
+    editor->replaceCurrent(m_findDialog->term(), m_findDialog->replacement(),
+                           m_findDialog->options());
 }
 
-void MainWindow::replaceAll()
-{
+void MainWindow::replaceAll() {
     EditorWidget* editor = currentEditor();
     if (!editor)
         return;
@@ -716,38 +964,33 @@ void MainWindow::replaceAll()
     if (term.isEmpty())
         return;
     int count = 0;
-    const QString replaced = SearchEngine::replaceAll(editor->documentText(), term,
-                                                      m_findDialog->replacement(),
-                                                      m_findDialog->options(), &count);
+    const QString replaced = SearchEngine::replaceAll(
+        editor->documentText(), term, m_findDialog->replacement(), m_findDialog->options(), &count);
     editor->setDocumentText(replaced);
     showMessage(tr("Replaced %1 occurrence(s).").arg(count));
 }
 
-void MainWindow::countMatches()
-{
+void MainWindow::countMatches() {
     EditorWidget* editor = currentEditor();
     if (!editor)
         return;
-    const int count = SearchEngine::count(editor->documentText(), m_findDialog->term(),
-                                          m_findDialog->options());
+    const int count =
+        SearchEngine::count(editor->documentText(), m_findDialog->term(), m_findDialog->options());
     showMessage(tr("%1 match(es) found.").arg(count));
 }
 
-void MainWindow::markAll()
-{
+void MainWindow::markAll() {
     if (EditorWidget* editor = currentEditor())
         editor->highlightMatches(m_findDialog->term(), m_findDialog->options());
 }
 
-void MainWindow::gotoResult(const QString& file, int line)
-{
+void MainWindow::gotoResult(const QString& file, int line) {
     EditorWidget* editor = openPath(file);
     if (editor)
         editor->gotoLine(line);
 }
 
-void MainWindow::toggleSplitView(bool enabled)
-{
+void MainWindow::toggleSplitView(bool enabled) {
     m_subTabs->setVisible(enabled);
     if (!enabled) {
         while (m_subTabs->count() > 0) {
@@ -761,13 +1004,17 @@ void MainWindow::toggleSplitView(bool enabled)
         }
         m_activeTabs = m_mainTabs;
     } else if (m_subTabs->count() == 0) {
-        m_subTabs->addTab(new EditorWidget(), tr("Untitled"));
+        EditorWidget* editor = createEditor();
+        m_subTabs->addTab(editor, tr("Untitled"));
+        m_subTabs->setCurrentWidget(editor);
+        registerEditor(editor);
+        ++m_untitledCounter;
+        updateTabTitle(editor);
     }
     m_actSplitView->setChecked(enabled);
 }
 
-void MainWindow::moveToOtherView()
-{
+void MainWindow::moveToOtherView() {
     EditorWidget* editor = currentEditor();
     if (!editor)
         return;
@@ -784,8 +1031,7 @@ void MainWindow::moveToOtherView()
     updateTabTitle(editor);
 }
 
-void MainWindow::setTheme(const QString& id)
-{
+void MainWindow::setTheme(const QString& id) {
     m_themeId = id;
     ThemeManager::setCurrent(id);
     const Theme& theme = ThemeManager::byId(id);
@@ -808,21 +1054,184 @@ void MainWindow::setTheme(const QString& id)
     applyThemeToAll();
 }
 
-void MainWindow::applyThemeToAll()
-{
+void MainWindow::applyThemeToAll() {
     const Theme& theme = ThemeManager::current();
     for (EditorWidget* editor : m_editors)
         editor->applyTheme(theme);
 }
 
-void MainWindow::setWordWrap(bool enabled)
-{
+void MainWindow::setWordWrap(bool enabled) {
     for (EditorWidget* editor : m_editors)
         editor->editor()->send(SCI_SETWRAPMODE, enabled ? SC_WRAP_WORD : SC_WRAP_NONE);
 }
 
-void MainWindow::loadSession()
-{
+void MainWindow::applySettingsToAll() {
+    for (EditorWidget* editor : m_editors)
+        editor->applySettings(m_settings);
+}
+
+void MainWindow::showPreferences() {
+    PreferencesDialog dialog(m_settings, this);
+    if (dialog.exec() != QDialog::Accepted)
+        return;
+    m_settings = dialog.resultSettings();
+    m_settings.save();
+    setTheme(m_settings.theme);
+    m_actWordWrap->setChecked(m_settings.wordWrap);
+    m_actShowLineNumbers->setChecked(m_settings.showLineNumbers);
+    m_actShowFoldMargin->setChecked(m_settings.showFoldMargin);
+    m_actShowBookmarkMargin->setChecked(m_settings.showBookmarkMargin);
+    m_actShowAllChars->setChecked(m_settings.showWhitespace);
+    m_actShowEol->setChecked(m_settings.showEol);
+    m_actShowIndentGuides->setChecked(m_settings.showIndentGuides);
+    m_actHighlightLine->setChecked(m_settings.highlightCurrentLine);
+    applySettingsToAll();
+    showMessage(tr("Preferences saved."));
+}
+
+void MainWindow::showColumnEditor() {
+    EditorWidget* editor = currentEditor();
+    if (!editor)
+        return;
+    ColumnEditorDialog dialog(this);
+    if (dialog.exec() != QDialog::Accepted)
+        return;
+    const QString text = editor->documentText();
+    const int totalLines = TextOps::lineCount(text);
+    const int startLine = qMax(0, dialog.fromLine() - 1);
+    const int endLine =
+        (dialog.toLine() < 0) ? totalLines - 1 : qMin(totalLines - 1, dialog.toLine() - 1);
+    if (startLine >= totalLines || startLine > endLine) {
+        showMessage(tr("No lines to edit."));
+        return;
+    }
+    const bool useTabs = m_settings.tabMode == QStringLiteral("tabs");
+    const QString result =
+        dialog.insertTextMode()
+            ? TextOps::columnInsertText(text, dialog.column(), dialog.text(), startLine, endLine,
+                                        dialog.repeatIntoEmptyLines(), useTabs, m_settings.tabWidth)
+            : TextOps::columnInsertNumbers(text, dialog.column(), dialog.initialNumber(),
+                                           dialog.step(), dialog.paddingWidth(), startLine, endLine,
+                                           dialog.repeatIntoEmptyLines(), useTabs,
+                                           m_settings.tabWidth);
+    editor->setDocumentText(result);
+    showMessage(tr("Column editor applied."));
+}
+
+void MainWindow::showGotoLineDialog() {
+    EditorWidget* editor = currentEditor();
+    if (!editor)
+        return;
+    const int maxLine = static_cast<int>(editor->editor()->lineCount());
+    GotoLineDialog dialog(maxLine, this);
+    if (dialog.exec() != QDialog::Accepted)
+        return;
+    editor->gotoLine(dialog.lineNumber());
+    editor->setFocus();
+}
+
+void MainWindow::showDocumentSummary() {
+    EditorWidget* editor = currentEditor();
+    if (!editor)
+        return;
+    const QString text = editor->documentText();
+    const int words = TextOps::wordCount(text);
+    const int lines = TextOps::lineCount(text);
+    const int chars = TextOps::characterCount(text);
+    const int ascii =
+        int(std::count_if(text.begin(), text.end(), [](QChar c) { return c.unicode() < 128; }));
+    const QString summary =
+        tr("Document: %1\nWords: %2\nLines: %3\nCharacters: %4\n"
+           "ASCII characters: %5\nBytes (UTF-8): %6")
+            .arg(editor->filePath().isEmpty() ? tr("Untitled") : editor->filePath())
+            .arg(words)
+            .arg(lines)
+            .arg(chars)
+            .arg(ascii)
+            .arg(text.toUtf8().size());
+    DocumentSummaryDialog dialog(summary, this);
+    dialog.exec();
+}
+
+void MainWindow::showRunDialog() {
+    EditorWidget* editor = currentEditor();
+    const QString path = editor ? editor->filePath() : QString();
+    RunDialog dialog(path, this);
+    dialog.exec();
+}
+
+void MainWindow::toggleFullScreen() {
+    if (isFullScreen())
+        showNormal();
+    else
+        showFullScreen();
+    applySettingsToAll();
+}
+
+void MainWindow::toggleAlwaysOnTop() {
+    const bool on = m_actAlwaysOnTop->isChecked();
+    m_settings.alwaysOnTop = on;
+    setWindowFlag(Qt::WindowStaysOnTopHint, on);
+    show();
+    m_settings.save();
+}
+
+void MainWindow::setSplitOrientation(int orientation) {
+    m_settings.splitOrientation = orientation;
+    m_splitter->setOrientation(orientation == 1 ? Qt::Vertical : Qt::Horizontal);
+    m_actSplitHorizontal->setChecked(orientation == 0);
+    m_actSplitVertical->setChecked(orientation == 1);
+    m_settings.save();
+    updateWindowTitle();
+}
+
+void MainWindow::nextTab(bool forward) {
+    if (!m_activeTabs || m_activeTabs->count() < 2)
+        return;
+    const int count = m_activeTabs->count();
+    const int current = m_activeTabs->currentIndex();
+    int next = forward ? (current + 1) % count : (current - 1 + count) % count;
+    m_activeTabs->setCurrentIndex(next);
+}
+
+void MainWindow::selectTabByNumber(int number) {
+    if (number < 0 || number >= m_editors.size())
+        return;
+    EditorWidget* editor = m_editors.at(number);
+    auto* tabs = qobject_cast<QTabWidget*>(editor->parentWidget());
+    if (!tabs)
+        return;
+    tabs->setCurrentWidget(editor);
+    m_activeTabs = tabs;
+    editor->setFocus();
+}
+
+void MainWindow::updateWindowMenu() {
+    if (!m_windowMenu)
+        return;
+    for (int i = m_windowMenu->actions().size() - 1; i >= 0; --i) {
+        QAction* action = m_windowMenu->actions().at(i);
+        if (action->data().toString() == QStringLiteral("docmenu"))
+            m_windowMenu->removeAction(action);
+    }
+    for (int i = 0; i < m_editors.size(); ++i) {
+        EditorWidget* editor = m_editors.at(i);
+        const QString name = editor->filePath().isEmpty()
+                                 ? tr("Untitled")
+                                 : QFileInfo(editor->filePath()).fileName();
+        QAction* action = new QAction(tr("&%1. %2").arg((i + 1) % 10).arg(name), m_windowMenu);
+        action->setData(QStringLiteral("docmenu"));
+        if (i < 10)
+            action->setShortcut(QKeySequence(QStringLiteral("Alt+%1").arg((i + 1) % 10)));
+        action->setCheckable(true);
+        action->setChecked(editor == currentEditor());
+        const int index = i;
+        connect(action, &QAction::triggered, this, [this, index]() { selectTabByNumber(index); });
+        m_windowMenu->addAction(action);
+    }
+}
+
+void MainWindow::loadSession() {
     bool ok = false;
     const Session session = SessionManager::load(SessionManager::defaultPath(), &ok);
     if (!ok)
@@ -838,15 +1247,16 @@ void MainWindow::loadSession()
             continue;
         if (!file.language.isEmpty())
             editor->setLanguage(file.language);
-        editor->applySavedState(file.cursor, file.anchor, file.firstVisibleLine, file.bookmarkLines);
+        editor->applySavedState(file.cursor, file.anchor, file.firstVisibleLine,
+                                file.bookmarkLines);
     }
 
     if (session.splitView && !session.subViewFiles.isEmpty()) {
         toggleSplitView(true);
         m_subTabs->clear();
         for (const SessionFile& file : session.subViewFiles) {
-            EditorWidget* editor = file.untitled ? newDocument(file.untitledText)
-                                                 : openPath(file.path, false);
+            EditorWidget* editor =
+                file.untitled ? newDocument(file.untitledText) : openPath(file.path, false);
             if (!editor)
                 continue;
             if (!file.language.isEmpty())
@@ -860,8 +1270,7 @@ void MainWindow::loadSession()
     updateRecentMenu();
 }
 
-void MainWindow::saveSession()
-{
+void MainWindow::saveSession() {
     Session session;
     auto capture = [](EditorWidget* editor) {
         SessionFile file;
@@ -900,8 +1309,7 @@ void MainWindow::saveSession()
     SessionManager::save(session, SessionManager::defaultPath());
 }
 
-void MainWindow::updateRecentMenu()
-{
+void MainWindow::updateRecentMenu() {
     if (!m_recentMenu)
         return;
     m_recentMenu->clear();
@@ -922,8 +1330,7 @@ void MainWindow::updateRecentMenu()
     });
 }
 
-void MainWindow::addRecent(const QString& path)
-{
+void MainWindow::addRecent(const QString& path) {
     if (path.isEmpty())
         return;
     m_recent.add(path);
@@ -931,28 +1338,26 @@ void MainWindow::addRecent(const QString& path)
     updateRecentMenu();
 }
 
-void MainWindow::loadMacros()
-{
+void MainWindow::loadMacros() {
     bool ok = false;
     m_macros = MacroLibrary::load(MacroLibrary::defaultPath(), &ok);
     if (!ok)
         m_macros.clear();
 }
 
-void MainWindow::saveMacros()
-{
+void MainWindow::saveMacros() {
     MacroLibrary::save(m_macros, MacroLibrary::defaultPath());
 }
 
-void MainWindow::loadPlugins()
-{
+void MainWindow::loadPlugins() {
     const QString userDir = pluginsPath();
     QDir().mkpath(userDir);
     m_pluginHost->setPluginDirectory(userDir);
 
     QStringList dirs;
     dirs << userDir;
-    for (const QString& base : QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation))
+    for (const QString& base :
+         QStandardPaths::standardLocations(QStandardPaths::GenericDataLocation))
         dirs << base + QStringLiteral("/PadForge/plugins");
     dirs << QCoreApplication::applicationDirPath() + QStringLiteral("/plugins");
 
@@ -962,19 +1367,18 @@ void MainWindow::loadPlugins()
             continue;
         m_pluginHost->loadLuaPluginsIn(dir);
         for (const QString& entry :
-             directory.entryList({ QStringLiteral("*.so"), QStringLiteral("*.so.*") }, QDir::Files)) {
+             directory.entryList({QStringLiteral("*.so"), QStringLiteral("*.so.*")}, QDir::Files)) {
             m_pluginHost->loadNativePlugin(directory.absoluteFilePath(entry));
         }
     }
     showMessage(tr("Loaded %1 plugin(s).").arg(m_pluginHost->loadedPlugins().size()));
 }
 
-void MainWindow::startMacroRecording()
-{
+void MainWindow::startMacroRecording() {
     bool ok = false;
-    const QString name = QInputDialog::getText(this, tr("Record Macro"), tr("Macro name:"),
-                                               QLineEdit::Normal,
-                                               tr("Macro %1").arg(m_macros.size() + 1), &ok);
+    const QString name =
+        QInputDialog::getText(this, tr("Record Macro"), tr("Macro name:"), QLineEdit::Normal,
+                              tr("Macro %1").arg(m_macros.size() + 1), &ok);
     if (!ok || name.isEmpty())
         return;
     m_macroRecorder.start(name);
@@ -982,8 +1386,7 @@ void MainWindow::startMacroRecording()
     showMessage(tr("Recording macro \"%1\"...").arg(name));
 }
 
-void MainWindow::stopMacroRecording()
-{
+void MainWindow::stopMacroRecording() {
     Macro macro = m_macroRecorder.stop();
     m_actRecordMacro->setText(tr("Start recording"));
     if (macro.isEmpty()) {
@@ -995,8 +1398,7 @@ void MainWindow::stopMacroRecording()
     showMessage(tr("Saved macro \"%1\".").arg(macro.name));
 }
 
-void MainWindow::playMacro()
-{
+void MainWindow::playMacro() {
     if (m_macros.isEmpty()) {
         showMessage(tr("No macros recorded."));
         return;
@@ -1005,8 +1407,8 @@ void MainWindow::playMacro()
     for (const Macro& macro : m_macros)
         names << macro.name;
     bool ok = false;
-    const QString chosen = QInputDialog::getItem(this, tr("Play Macro"), tr("Macro:"), names, 0,
-                                                 false, &ok);
+    const QString chosen =
+        QInputDialog::getItem(this, tr("Play Macro"), tr("Macro:"), names, 0, false, &ok);
     if (!ok)
         return;
     EditorWidget* editor = currentEditor();
@@ -1025,8 +1427,7 @@ void MainWindow::playMacro()
     }
 }
 
-void MainWindow::showAbout()
-{
+void MainWindow::showAbout() {
     QMessageBox::about(this, tr("About PadForge"),
                        tr("<h3>PadForge</h3>"
                           "<p>A fast, native Linux text editor inspired by the Notepad++ "
@@ -1036,8 +1437,7 @@ void MainWindow::showAbout()
                           "PadForge.</p>"));
 }
 
-void MainWindow::insertText(const QString& text)
-{
+void MainWindow::insertText(const QString& text) {
     EditorWidget* editor = currentEditor();
     if (!editor)
         return;
@@ -1045,49 +1445,41 @@ void MainWindow::insertText(const QString& text)
     editor->editor()->send(SCI_REPLACESEL, 0, reinterpret_cast<sptr_t>(utf8.constData()));
 }
 
-void MainWindow::setDocumentText(const QString& text)
-{
+void MainWindow::setDocumentText(const QString& text) {
     if (EditorWidget* editor = currentEditor())
         editor->setDocumentText(text);
 }
 
-QString MainWindow::documentText() const
-{
+QString MainWindow::documentText() const {
     EditorWidget* editor = currentEditor();
     return editor ? editor->documentText() : QString();
 }
 
-int MainWindow::lineCount() const
-{
+int MainWindow::lineCount() const {
     EditorWidget* editor = currentEditor();
     return editor ? static_cast<int>(editor->editor()->lineCount()) : 0;
 }
 
-int MainWindow::currentLine() const
-{
+int MainWindow::currentLine() const {
     EditorWidget* editor = currentEditor();
     return editor ? editor->currentLine() : 0;
 }
 
-void MainWindow::gotoLine(int oneBasedLine)
-{
+void MainWindow::gotoLine(int oneBasedLine) {
     if (EditorWidget* editor = currentEditor())
         editor->gotoLine(oneBasedLine);
 }
 
-void MainWindow::setLanguage(const QString& lexerId)
-{
+void MainWindow::setLanguage(const QString& lexerId) {
     if (EditorWidget* editor = currentEditor())
         editor->setLanguage(lexerId);
 }
 
-void MainWindow::showMessage(const QString& message)
-{
+void MainWindow::showMessage(const QString& message) {
     statusBar()->showMessage(message, 8000);
 }
 
-void MainWindow::addMenuItem(const QString& name, std::function<void()> callback)
-{
+void MainWindow::addMenuItem(const QString& name, std::function<void()> callback) {
     if (!m_pluginsMenu)
         return;
     QAction* action = m_pluginsMenu->addAction(name);

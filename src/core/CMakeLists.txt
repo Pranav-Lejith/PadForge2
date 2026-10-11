@@ -5,6 +5,8 @@ add_library(padforge_core STATIC
     PluginHost.cpp
     SearchEngine.cpp
     Session.cpp
+    Settings.cpp
+    TextOps.cpp
     Theme.cpp)
 
 target_include_directories(padforge_core PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")

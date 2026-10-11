@@ -13,6 +13,17 @@ struct Language {
     QStringList extensions;
     QStringList shebangs;
     QString keywords;
+
+    // Comment tokens used by the comment toggle commands.
+    QString lineComment;
+    QString blockCommentStart;
+    QString blockCommentEnd;
+
+    bool hasLineComment() const { return !lineComment.isEmpty(); }
+    bool hasBlockComment() const
+    {
+        return !blockCommentStart.isEmpty() && !blockCommentEnd.isEmpty();
+    }
 };
 
 // Maps file names / shebangs to a Lexilla lexer and supplies keyword sets.

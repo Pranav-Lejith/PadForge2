@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QColor>
+#include <QHash>
 #include <QList>
 #include <QString>
 
@@ -53,6 +54,9 @@ struct Theme {
     QColor bookmarkFg;
     QColor indentGuide;
     QColor edgeLine;
+
+    // Optional per-theme overrides keyed by StyleRole (as int).
+    QHash<int, QColor> roleOverrides;
 
     QColor roleColor(StyleRole role) const;
     QColor colorFor(const QString& lexer, int style) const;

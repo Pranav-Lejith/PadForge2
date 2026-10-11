@@ -311,6 +311,169 @@ Theme darkTheme()
     return t;
 }
 
+QHash<int, QColor> roles(const QColor& keyword, const QColor& keyword2, const QColor& stringColor,
+                         const QColor& comment, const QColor& number, const QColor& function,
+                         const QColor& type, const QColor& tag, const QColor& preprocessor,
+                         const QColor& operatorColor, const QColor& value)
+{
+    return {
+        { int(StyleRole::Keyword), keyword },
+        { int(StyleRole::Keyword2), keyword2 },
+        { int(StyleRole::String), stringColor },
+        { int(StyleRole::Character), stringColor },
+        { int(StyleRole::Comment), comment },
+        { int(StyleRole::CommentDoc), comment },
+        { int(StyleRole::Number), number },
+        { int(StyleRole::Constant), number },
+        { int(StyleRole::Function), function },
+        { int(StyleRole::Type), type },
+        { int(StyleRole::Tag), tag },
+        { int(StyleRole::Attribute), type },
+        { int(StyleRole::Preprocessor), preprocessor },
+        { int(StyleRole::Operator), operatorColor },
+        { int(StyleRole::Variable), value },
+        { int(StyleRole::Value), value },
+    };
+}
+
+Theme solarizedLight()
+{
+    Theme t = buildCommon("solarized-light", "Solarized Light", false);
+    t.background = QColor("#fdf6e3");
+    t.foreground = QColor("#657b83");
+    t.caret = QColor("#657b83");
+    t.selectionBg = QColor("#eee8d5");
+    t.selectionFg = QColor("#586e75");
+    t.currentLine = QColor("#eee8d5");
+    t.lineNumberFg = QColor("#93a1a1");
+    t.lineNumberBg = QColor("#eee8d5");
+    t.foldFg = QColor("#93a1a1");
+    t.matchedBraceBg = QColor("#eee8d5");
+    t.bookmarkFg = QColor("#268bd2");
+    t.indentGuide = QColor("#eee8d5");
+    t.edgeLine = QColor("#eee8d5");
+    t.roleOverrides = roles(QColor("#859900"), QColor("#859900"), QColor("#2aa198"),
+                            QColor("#93a1a1"), QColor("#d33682"), QColor("#268bd2"),
+                            QColor("#b58900"), QColor("#268bd2"), QColor("#cb4b16"),
+                            QColor("#859900"), QColor("#cb4b16"));
+    return t;
+}
+
+Theme solarizedDark()
+{
+    Theme t = buildCommon("solarized-dark", "Solarized Dark", true);
+    t.background = QColor("#002b36");
+    t.foreground = QColor("#839496");
+    t.caret = QColor("#839496");
+    t.selectionBg = QColor("#073642");
+    t.selectionFg = QColor("#93a1a1");
+    t.currentLine = QColor("#073642");
+    t.lineNumberFg = QColor("#586e75");
+    t.lineNumberBg = QColor("#00252e");
+    t.foldFg = QColor("#586e75");
+    t.matchedBraceBg = QColor("#073642");
+    t.bookmarkFg = QColor("#268bd2");
+    t.indentGuide = QColor("#073642");
+    t.edgeLine = QColor("#073642");
+    t.roleOverrides = roles(QColor("#859900"), QColor("#859900"), QColor("#2aa198"),
+                            QColor("#586e75"), QColor("#d33682"), QColor("#268bd2"),
+                            QColor("#b58900"), QColor("#268bd2"), QColor("#cb4b16"),
+                            QColor("#859900"), QColor("#cb4b16"));
+    return t;
+}
+
+Theme monokai()
+{
+    Theme t = buildCommon("monokai", "Monokai", true);
+    t.background = QColor("#272822");
+    t.foreground = QColor("#f8f8f2");
+    t.caret = QColor("#f8f8f0");
+    t.selectionBg = QColor("#49483e");
+    t.selectionFg = QColor("#f8f8f2");
+    t.currentLine = QColor("#3e3d32");
+    t.lineNumberFg = QColor("#90908a");
+    t.lineNumberBg = QColor("#1e1f1c");
+    t.foldFg = QColor("#90908a");
+    t.matchedBraceBg = QColor("#49483e");
+    t.bookmarkFg = QColor("#a6e22e");
+    t.indentGuide = QColor("#3b3a32");
+    t.edgeLine = QColor("#49483e");
+    t.roleOverrides = roles(QColor("#f92672"), QColor("#f92672"), QColor("#e6db74"),
+                            QColor("#75715e"), QColor("#ae81ff"), QColor("#a6e22e"),
+                            QColor("#66d9ef"), QColor("#f92672"), QColor("#f92672"),
+                            QColor("#f92672"), QColor("#ae81ff"));
+    return t;
+}
+
+Theme dracula()
+{
+    Theme t = buildCommon("dracula", "Dracula", true);
+    t.background = QColor("#282a36");
+    t.foreground = QColor("#f8f8f2");
+    t.caret = QColor("#f8f8f2");
+    t.selectionBg = QColor("#44475a");
+    t.selectionFg = QColor("#ffffff");
+    t.currentLine = QColor("#44475a");
+    t.lineNumberFg = QColor("#6272a4");
+    t.lineNumberBg = QColor("#21222c");
+    t.foldFg = QColor("#6272a4");
+    t.matchedBraceBg = QColor("#44475a");
+    t.bookmarkFg = QColor("#8be9fd");
+    t.indentGuide = QColor("#383a4a");
+    t.edgeLine = QColor("#44475a");
+    t.roleOverrides = roles(QColor("#ff79c6"), QColor("#ff79c6"), QColor("#f1fa8c"),
+                            QColor("#6272a4"), QColor("#bd93f9"), QColor("#50fa7b"),
+                            QColor("#8be9fd"), QColor("#ff79c6"), QColor("#ffb86c"),
+                            QColor("#ff79c6"), QColor("#bd93f9"));
+    return t;
+}
+
+Theme nord()
+{
+    Theme t = buildCommon("nord", "Nord", true);
+    t.background = QColor("#2e3440");
+    t.foreground = QColor("#d8dee9");
+    t.caret = QColor("#d8dee9");
+    t.selectionBg = QColor("#434c5e");
+    t.selectionFg = QColor("#eceff4");
+    t.currentLine = QColor("#3b4252");
+    t.lineNumberFg = QColor("#4c566a");
+    t.lineNumberBg = QColor("#2b303b");
+    t.foldFg = QColor("#4c566a");
+    t.matchedBraceBg = QColor("#3b4252");
+    t.bookmarkFg = QColor("#88c0d0");
+    t.indentGuide = QColor("#3b4252");
+    t.edgeLine = QColor("#434c5e");
+    t.roleOverrides = roles(QColor("#81a1c1"), QColor("#81a1c1"), QColor("#a3be8c"),
+                            QColor("#616e88"), QColor("#b48ead"), QColor("#88c0d0"),
+                            QColor("#8fbcbb"), QColor("#81a1c1"), QColor("#d08770"),
+                            QColor("#81a1c1"), QColor("#ebcb8b"));
+    return t;
+}
+
+Theme gruvboxDark()
+{
+    Theme t = buildCommon("gruvbox", "Gruvbox Dark", true);
+    t.background = QColor("#282828");
+    t.foreground = QColor("#ebdbb2");
+    t.caret = QColor("#ebdbb2");
+    t.selectionBg = QColor("#504945");
+    t.selectionFg = QColor("#fbf1c7");
+    t.currentLine = QColor("#3c3836");
+    t.lineNumberFg = QColor("#928374");
+    t.lineNumberBg = QColor("#1d2021");
+    t.foldFg = QColor("#928374");
+    t.matchedBraceBg = QColor("#3c3836");
+    t.bookmarkFg = QColor("#8ec07c");
+    t.indentGuide = QColor("#3c3836");
+    t.edgeLine = QColor("#504945");
+    t.roleOverrides = roles(QColor("#fb4934"), QColor("#fb4934"), QColor("#b8bb26"),
+                            QColor("#928374"), QColor("#d3869b"), QColor("#8ec07c"),
+                            QColor("#fabd2f"), QColor("#fb4934"), QColor("#fe8019"),
+                            QColor("#fe8019"), QColor("#d3869b"));
+    return t;
+}
+
 } // namespace
 
 StyleRole styleRole(const QString& lexer, int style)
@@ -334,6 +497,10 @@ StyleRole styleRole(const QString& lexer, int style)
 
 QColor Theme::roleColor(StyleRole role) const
 {
+    const auto override = roleOverrides.constFind(int(role));
+    if (override != roleOverrides.constEnd())
+        return override.value();
+
     const bool d = dark;
     switch (role) {
     case StyleRole::Comment:
@@ -419,7 +586,8 @@ QString Theme::styleSheet() const
 
 const QList<Theme>& ThemeManager::themes()
 {
-    static const QList<Theme> list{lightTheme(), darkTheme()};
+    static const QList<Theme> list{lightTheme(), darkTheme(), solarizedLight(), solarizedDark(),
+                                   monokai(), dracula(), nord(), gruvboxDark()};
     return list;
 }
 

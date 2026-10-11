@@ -23,6 +23,12 @@ PadForge follows the familiar Notepad++/desktop editor conventions.
 | `Ctrl+C` | Copy |
 | `Ctrl+V` | Paste |
 | `Ctrl+A` | Select all |
+| `Ctrl+D` | Duplicate current line |
+| `Ctrl+Shift+C` | Toggle line comment |
+| `Ctrl+Shift+B` | Toggle block comment |
+| `Ctrl+Alt+C` | Column editor |
+| `Ctrl+G` | Go to line |
+| `Ctrl+Space` | Word completion |
 
 ## Search
 
@@ -48,6 +54,22 @@ PadForge follows the familiar Notepad++/desktop editor conventions.
 | `Ctrl++` | Zoom in |
 | `Ctrl+-` | Zoom out |
 | `Ctrl+0` (Reset Zoom) | Reset zoom |
+| `F11` | Full screen |
+
+## Window
+
+| Shortcut | Action |
+| --- | --- |
+| `Ctrl+Tab` | Next tab |
+| `Ctrl+Shift+Tab` | Previous tab |
+| `Alt+1`..`Alt+9` | Jump to document 1..9 |
+
+## Tools
+
+| Shortcut | Action |
+| --- | --- |
+| `F5` | Run command... |
+| `Ctrl+,` (Preferences) | Open preferences |
 
 > Tip: every menu entry that has a shortcut also shows it next to the item, so
 > you can discover the full list from within the application.

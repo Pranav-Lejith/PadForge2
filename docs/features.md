@@ -8,10 +8,22 @@ being a port of its code.
 - Tabbed documents with drag-reorderable tabs and a closable tab bar.
 - Optional **split view** with a second tab group; move documents between the two.
 - Undo/redo, cut/copy/paste, select all, incremental search highlighting.
-- **Bookmarks** (toggle, next/previous, clear all) with a dedicated margin.
+- **Bookmarks** (toggle, next/previous, clear, invert) with a dedicated margin.
+- **Bookmarked-line operations**: copy, cut, delete and paste-to, straight from
+  the Edit menu.
 - **Code folding** and a fold margin, configurable on load.
 - **Line numbers**, **brace matching**, **current-line highlight** and a
   configurable **edge line**.
+- **Line operations**: delete, duplicate, move up/down current line, join and
+  split lines, sort (ascending/descending/case-insensitive), remove duplicate or
+  empty lines, tabify/untabify.
+- **Case conversion**: upper, lower, title and sentence case.
+- **Whitespace tools**: trim trailing, leading or both.
+- **Comment/uncomment** toggles for line and block comments, driven by the active
+  language's comment tokens.
+- **Column editor**: insert repeated text or consecutive, zero-padded numbers
+  across a line range.
+- **Word completion** (Ctrl+Space) fed by words already present in the document.
 - **Auto-indent** and **smart auto-close** of quotes and brackets.
 - **Column / multi-cursor** editing mode.
 - **Large-file mode** that temporarily disables expensive features.
@@ -45,8 +57,24 @@ being a port of its code.
 
 ## Appearance
 
-- Light and dark themes with per-language style mapping.
+- Eight built-in themes: light and dark, Solarized (light/dark), Monokai,
+  Dracula, Nord and Gruvbox, with per-language style mapping.
 - Configurable zoom.
+- **Preferences** dialog and a **Settings** menu persist editor options
+  (font, tab width, word wrap, margins, whitespace/EOL display, edge line,
+  completion and bracket auto-close) across sessions.
+
+## Window management
+
+- **Window** menu lists every open document with 1..9 quick-switch shortcuts;
+  next/previous tab (Ctrl+Tab / Ctrl+Shift+Tab).
+- Split **orientation** (horizontal or vertical) for the second tab group.
+- **Full screen** (F11) and **always on top**.
+- **Run...** (F5) executes a shell command, expanding `$(FULL_CURRENT_PATH)` /
+  `$(CURRENT_DIRECTORY)` / `$(CURRENT_FILENAME)` style variables, and shows
+  captured output.
+- **Go to line**, **Document summary** (words, lines, characters, bytes) with
+  copy-to-clipboard.
 
 ## How PadForge compares
 

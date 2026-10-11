@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Seven more themes: Solarized (light/dark), Monokai, Dracula, Nord and
+  Gruvbox, implemented as per-role color overrides.
+- Comment tokens per language, powering line/block comment toggles
+  (`TextOps::toggleLineComment`/`toggleBlockComment`).
+- `TextOps` core module: line ops (duplicate/delete/join/split/sort/dedupe),
+  whitespace trimming, case conversion, tabify/untabify, blank-line removal and
+  column editing with numbers.
+- `AppSettings` persistence via `QSettings` (`Settings.{h,cpp}`) covering theme,
+  font, tab width, word wrap, margins, whitespace/EOL/guide display, edge line,
+  auto-completion and bracket auto-close.
+- `EditorWidget` operations: full-line transformations over the current
+  selection, bookmarked-line copy/cut/delete/paste/invert, display toggles,
+  font/tab settings, word completion (Ctrl+Space) and a right-click context
+  menu.
+- New dialogs: `PreferencesDialog`, `ColumnEditorDialog`, `GotoLineDialog`,
+  `DocumentSummaryDialog` and `RunDialog` (F5).
+- Extended menus: Edit transformation and bookmark menus, Settings menu,
+  Window menu with document list and `Alt+1..9` jumps, split orientation,
+  full screen (F11) and always-on-top.
+- `test_textops` unit suite; smoke tests for transformations and bookmarks.
+
 ## [0.1.0] - 2026-10-11
 
 Initial development release.
