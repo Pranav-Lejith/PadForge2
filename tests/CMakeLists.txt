@@ -14,9 +14,9 @@ padforge_add_test(test_session)
 padforge_add_test(test_macro)
 
 # Headless UI smoke test (only when the GUI target is available).
-if(TARGET padforge)
+if(TARGET padforge_gui)
     add_executable(test_smoke test_smoke.cpp)
-    target_link_libraries(test_smoke PRIVATE padforge padforge_core Qt6::Test Qt6::Widgets)
+    target_link_libraries(test_smoke PRIVATE padforge_gui padforge_core Qt6::Test Qt6::Widgets)
     add_test(NAME test_smoke COMMAND test_smoke)
     set_tests_properties(test_smoke PROPERTIES
         ENVIRONMENT "QT_QPA_PLATFORM=offscreen;PADFORGE_TESTING=1")

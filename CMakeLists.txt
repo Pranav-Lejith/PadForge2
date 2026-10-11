@@ -36,10 +36,10 @@ endif()
 
 add_subdirectory(src/core)
 
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/gui/CMakeLists.txt")
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/gui/CMakeLists.txt" AND TARGET PadForge::scintilla)
     add_subdirectory(src/gui)
 else()
-    message(STATUS "PadForge: src/gui not present - building core library only")
+    message(STATUS "PadForge: GUI not built (needs Scintilla) - building core library only")
 endif()
 
 if(PADFORGE_BUILD_TESTS)
