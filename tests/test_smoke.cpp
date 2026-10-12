@@ -12,6 +12,7 @@
 #include <QtTest>
 #include <Scintilla.h>
 #include <ScintillaEdit.h>
+#include <unistd.h>
 
 using namespace PadForge;
 
@@ -26,6 +27,7 @@ private slots:
     void editorTransformations();
     void bookmarkOperations();
     void exportAndInsertOperations();
+    void readOnlyDetection();
 };
 
 void SmokeTest::newDocumentHoldsText() {
@@ -168,6 +170,33 @@ void SmokeTest::exportAndInsertOperations() {
     editor.setDocumentText(QString());
     editor.insertGuid(GuidFormat::Compact);
     QCOMPARE(editor.documentText().size(), 32);
+}
+
+void SmokeTest::readOnlyDetection() {
+    if (::geteuid() == 0)
+        QSKIP("File permission bits are not enforced for root");
+
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString path = dir.filePath(QStringLiteral("read-only.txt"));
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::WriteOnly));
+    file.write("hello\n");
+    file.close();
+
+    QVERIFY(QFile::setPermissions(path, QFileDevice::ReadOwner | QFileDevice::ReadGroup |
+                                            QFileDevice::ReadOther));
+    EditorWidget editor;
+    QString error;
+    QVERIFY(editor.openFile(path, &error));
+    QVERIFY(editor.isReadOnly());
+
+    QVERIFY(QFile::setPermissions(path, QFileDevice::ReadOwner | QFileDevice::WriteOwner));
+    editor.setReadOnly(false);
+    editor.setDocumentText(QStringLiteral("changed\n"));
+    QVERIFY(editor.saveFileAs(path, &error));
+    QVERIFY(!editor.isReadOnly());
+    QCOMPARE(editor.documentText(), QStringLiteral("changed\n"));
 }
 
 QTEST_MAIN(SmokeTest)

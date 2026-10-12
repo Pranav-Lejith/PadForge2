@@ -24,7 +24,9 @@ add_library(padforge_gui STATIC
     DocumentMap.cpp
     DocumentMap.h
     FloatingWindow.cpp
-    FloatingWindow.h)
+    FloatingWindow.h
+    ConsolePanel.cpp
+    ConsolePanel.h)
 
 target_include_directories(padforge_gui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(padforge_gui PUBLIC padforge_core PadForge::scintilla PadForge::lexilla

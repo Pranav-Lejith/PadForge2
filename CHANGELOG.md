@@ -43,6 +43,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   viewport and the caret line.
 - **Change-history markers**: red/green margin indicators for changed lines since
   load, shown by default and toggleable in Preferences (`editor/showChangeHistory`).
+- **Lua Script Console** dock: an interactive REPL over the shared plugin Lua
+  state (`PluginHost::evaluateLua`, expression-first with statement fallback),
+  command history, `print(...)` capture via a new `PluginHost` output sink, and
+  error reporting.
+- **File permission detection**: opening a non-writable file enables read-only
+  mode automatically; a **R/O** status-bar indicator and a **Read-Only Mode**
+  File-menu toggle manage it, and the state is saved/restored in the session.
+- **File menu**: **Copy File Name** and **Copy Full Path** actions.
+- **Tools menu** with a **Convert** submenu (Base64, URL, HTML entities, Unicode
+  escape, Rot13, text↔hex) and a **Hash / Digest** submenu (MD5, SHA-1/256/384/512),
+  acting on the selection or the whole document (`TextOps` conversion helpers).
 
 ## [0.1.0] - 2026-10-11
 

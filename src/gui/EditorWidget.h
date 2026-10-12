@@ -53,6 +53,12 @@ public:
     QString documentText() const;
     void setDocumentText(const QString& text);
 
+    // Returns the selected text, or the whole document when nothing is selected.
+    QString selectedTextOrDocument() const;
+    // Replaces the selection (or the whole document when empty) with
+    // `transform(text)`.
+    void transformSelectionOrDocument(const std::function<QString(const QString&)>& transform);
+
     int currentLine() const;   // 1-based
     int currentColumn() const; // 1-based
     int cursorPosition() const;

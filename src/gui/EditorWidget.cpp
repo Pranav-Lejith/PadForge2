@@ -528,6 +528,26 @@ void EditorWidget::setDocumentText(const QString& text) {
     m_editor->send(SCI_SETTEXT, 0, reinterpret_cast<sptr_t>(utf8.constData()));
 }
 
+QString EditorWidget::selectedTextOrDocument() const {
+    const int start = int(m_editor->send(SCI_GETSELECTIONSTART));
+    const int end = int(m_editor->send(SCI_GETSELECTIONEND));
+    if (start != end)
+        return QString::fromUtf8(m_editor->textRange(start, end));
+    return documentText();
+}
+
+void EditorWidget::transformSelectionOrDocument(
+    const std::function<QString(const QString&)>& transform) {
+    const int start = int(m_editor->send(SCI_GETSELECTIONSTART));
+    const int end = int(m_editor->send(SCI_GETSELECTIONEND));
+    if (start != end) {
+        const QString selected = QString::fromUtf8(m_editor->textRange(start, end));
+        replaceRange(start, end, transform(selected));
+    } else {
+        setDocumentText(transform(documentText()));
+    }
+}
+
 bool EditorWidget::openFile(const QString& path, QString* error) {
     QFile file(path);
     if (!file.open(QIODevice::ReadOnly)) {
@@ -554,6 +574,7 @@ bool EditorWidget::openFile(const QString& path, QString* error) {
     m_editor->send(SCI_EMPTYUNDOBUFFER);
     m_editor->send(SCI_SETSAVEPOINT);
     setLargeFile(raw.size() > kLargeFileBytes);
+    setReadOnly(!QFileInfo(path).isWritable());
     m_updating = false;
 
     emit filePathChanged(m_filePath);
@@ -594,6 +615,7 @@ bool EditorWidget::saveFileAs(const QString& path, QString* error) {
     }
     file.close();
     m_filePath = path;
+    setReadOnly(!QFileInfo(path).isWritable());
     m_editor->send(SCI_SETSAVEPOINT);
     emit filePathChanged(m_filePath);
     emit modificationChanged(false);

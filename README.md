@@ -31,7 +31,10 @@ with [Lexilla](https://www.scintilla.org/Lexilla.html) for syntax highlighting.
 - **Column / multi-cursor editing** mode.
 - **Macros**: record, save and replay editing sequences.
 - **Plugin runtime** for **Lua** scripts and **native** shared libraries through
-  a small, stable C ABI.
+  a small, stable C ABI, plus an interactive **Lua script console** (REPL).
+- **Tools**: Base64/URL/HTML/Unicode/Rot13/text↔hex conversions and MD5/SHA
+  digests of the selection or document; **Copy File Name/Path**; read-only
+  detection with an **R/O** status indicator and a **Read-Only Mode** toggle.
 - **Eight themes** (light, dark, Solarized ×2, Monokai, Dracula, Nord, Gruvbox)
   with per-language style mapping, plus a **Preferences** dialog.
 - **Window** menu with `Alt+1..9` document jumps, split orientation, **full

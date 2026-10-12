@@ -276,7 +276,7 @@ int l_print(lua_State* L)
         lua_pop(L, 1);
     }
     if (h)
-        h->context()->showMessage(message);
+        h->emitOutput(message);
     return 0;
 }
 
@@ -339,6 +339,52 @@ void PluginHost::closeLua()
 bool PluginHost::hasLua() const
 {
     return m_lua != nullptr;
+}
+
+bool PluginHost::evaluateLua(const QString& code, QString* result, QString* error)
+{
+    if (!m_lua) {
+        if (error)
+            *error = QStringLiteral("Lua runtime is not available");
+        return false;
+    }
+    lua_State* L = m_lua;
+    lua_pushcfunction(L, luaTraceback);
+    const int errFunc = lua_gettop(L);
+    const QByteArray utf8 = code.toUtf8();
+
+    // Prefer evaluating as an expression so REPL input such as `1+1` or
+    // `padforge.line_count()` yields a value; fall back to running it as a
+    // (possibly multi-line) statement when that does not compile.
+    const QByteArray expr = "return (\n" + utf8 + "\n)";
+    int status = luaL_loadbuffer(L, expr.constData(), size_t(expr.size()), "=console");
+    if (status != LUA_OK) {
+        lua_settop(L, errFunc - 1);
+        lua_pushcfunction(L, luaTraceback);
+        status = luaL_loadbuffer(L, utf8.constData(), size_t(utf8.size()), "=console");
+    }
+    if (status != LUA_OK) {
+        const char* msg = lua_tostring(L, -1);
+        if (error)
+            *error = QString::fromUtf8(msg ? msg : "unknown Lua error");
+        lua_settop(L, errFunc - 1);
+        return false;
+    }
+    if (lua_pcall(L, 0, LUA_MULTRET, errFunc) != LUA_OK) {
+        const char* msg = lua_tostring(L, -1);
+        if (error)
+            *error = QString::fromUtf8(msg ? msg : "unknown Lua error");
+        lua_settop(L, errFunc - 1);
+        return false;
+    }
+    if (lua_gettop(L) > errFunc) {
+        size_t len = 0;
+        const char* s = luaL_tolstring(L, -1, &len);
+        if (result)
+            *result = QString::fromUtf8(s, int(len));
+    }
+    lua_settop(L, errFunc - 1);
+    return true;
 }
 
 bool PluginHost::loadLuaPlugin(const QString& path, QString* error)
@@ -417,6 +463,26 @@ int PluginHost::loadLuaPluginsIn(const QString&)
     return 0;
 }
 
+bool PluginHost::evaluateLua(const QString&, QString*, QString* error)
+{
+    if (error)
+        *error = QStringLiteral("Lua support was not compiled in");
+    return false;
+}
+
 #endif
+
+void PluginHost::setOutputSink(std::function<void(const QString&)> sink)
+{
+    m_outputSink = std::move(sink);
+}
+
+void PluginHost::emitOutput(const QString& text)
+{
+    if (m_outputSink)
+        m_outputSink(text);
+    else if (m_context)
+        m_context->showMessage(text);
+}
 
 } // namespace PadForge

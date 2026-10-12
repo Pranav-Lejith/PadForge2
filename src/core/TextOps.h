@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QByteArray>
+#include <QCryptographicHash>
 #include <QString>
 #include <QStringList>
 
@@ -76,6 +78,23 @@ public:
     static int wordCount(const QString& text);
     static int lineCount(const QString& text);
     static int characterCount(const QString& text);
+
+    // Encoders / converters (MIME Tools / Converter style). Text is treated as
+    // UTF-8 where an octet stream is required.
+    static QString base64Encode(const QString& text);
+    static QString base64Decode(const QString& text, bool* ok = nullptr);
+    static QString urlEncode(const QString& text);
+    static QString urlDecode(const QString& text);
+    static QString htmlEncode(const QString& text);
+    static QString htmlDecode(const QString& text);
+    static QString unicodeEscape(const QString& text);
+    static QString unicodeUnescape(const QString& text);
+    static QString rot13(const QString& text);
+    static QString toHex(const QString& text);
+    static QString fromHex(const QString& text, bool* ok = nullptr);
+
+    // Hex digest of the UTF-8 bytes of `text` (upper-case, no separators).
+    static QString digest(const QString& text, QCryptographicHash::Algorithm algorithm);
 };
 
 } // namespace PadForge

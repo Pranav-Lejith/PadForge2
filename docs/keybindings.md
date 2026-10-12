@@ -73,5 +73,8 @@ PadForge follows the familiar Notepad++/desktop editor conventions.
 | `F5` | Run command... |
 | `Ctrl+,` (Preferences) | Open preferences |
 
+> The **Script Console** input runs on `Enter`, with `Up`/`Down` to cycle
+> through command history.
+
 > Tip: every menu entry that has a shortcut also shows it next to the item, so
 > you can discover the full list from within the application.

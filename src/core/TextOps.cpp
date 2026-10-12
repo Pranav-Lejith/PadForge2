@@ -2,6 +2,7 @@
 
 #include <QRegularExpression>
 #include <QSet>
+#include <QUrl>
 #include <algorithm>
 
 namespace PadForge {
@@ -514,6 +515,131 @@ int TextOps::lineCount(const QString& text) {
 
 int TextOps::characterCount(const QString& text) {
     return text.size();
+}
+
+QString TextOps::base64Encode(const QString& text) {
+    return QString::fromLatin1(text.toUtf8().toBase64());
+}
+
+QString TextOps::base64Decode(const QString& text, bool* ok) {
+    const QByteArray cleaned = text.trimmed().toUtf8();
+    const QByteArray decoded = QByteArray::fromBase64(cleaned);
+    if (ok)
+        *ok = cleaned.isEmpty() || !decoded.isEmpty();
+    return QString::fromUtf8(decoded);
+}
+
+QString TextOps::urlEncode(const QString& text) {
+    // Keep the RFC 3986 unreserved set (letters, digits, -._~) literal.
+    return QString::fromLatin1(QUrl::toPercentEncoding(text, QByteArrayLiteral("-._~")));
+}
+
+QString TextOps::urlDecode(const QString& text) {
+    return QUrl::fromPercentEncoding(text.toUtf8());
+}
+
+QString TextOps::htmlEncode(const QString& text) {
+    return text.toHtmlEscaped();
+}
+
+QString TextOps::htmlDecode(const QString& text) {
+    QString result = text;
+    result.replace(QStringLiteral("&lt;"), QStringLiteral("<"));
+    result.replace(QStringLiteral("&gt;"), QStringLiteral(">"));
+    result.replace(QStringLiteral("&quot;"), QStringLiteral("\""));
+    result.replace(QStringLiteral("&apos;"), QStringLiteral("'"));
+    result.replace(QStringLiteral("&#39;"), QStringLiteral("'"));
+    result.replace(QStringLiteral("&nbsp;"), QString(QChar(0x00A0)));
+
+    auto replaceNumeric = [](QString& target, const QRegularExpression& re, int base) {
+        QString out;
+        int last = 0;
+        auto it = re.globalMatch(target);
+        while (it.hasNext()) {
+            const QRegularExpressionMatch match = it.next();
+            out += target.mid(last, match.capturedStart() - last);
+            bool valid = false;
+            const uint code = match.captured(1).toUInt(&valid, base);
+            if (valid && code <= 0x10FFFF) {
+                const char32_t point = char32_t(code);
+                out += QString::fromUcs4(&point, 1);
+            } else {
+                out += match.captured(0);
+            }
+            last = match.capturedEnd();
+        }
+        out += target.mid(last);
+        target = out;
+    };
+    replaceNumeric(result, QRegularExpression(QStringLiteral("&#(\\d+);")), 10);
+    replaceNumeric(result, QRegularExpression(QStringLiteral("&#[xX]([0-9a-fA-F]+);")), 16);
+
+    result.replace(QStringLiteral("&amp;"), QStringLiteral("&"));
+    return result;
+}
+
+QString TextOps::unicodeEscape(const QString& text) {
+    QString out;
+    out.reserve(text.size());
+    for (int i = 0; i < text.size(); ++i) {
+        const char16_t code = text.at(i).unicode();
+        if (code < 0x80)
+            out += QChar(code);
+        else {
+            const QString hex =
+                QString::number(code, 16).rightJustified(4, QLatin1Char('0')).toUpper();
+            out += QStringLiteral("\\u") + hex;
+        }
+    }
+    return out;
+}
+
+QString TextOps::unicodeUnescape(const QString& text) {
+    static const QRegularExpression re(QStringLiteral("\\\\u([0-9a-fA-F]{4})"));
+    QString out;
+    int last = 0;
+    auto it = re.globalMatch(text);
+    while (it.hasNext()) {
+        const QRegularExpressionMatch match = it.next();
+        out += text.mid(last, match.capturedStart() - last);
+        out += QChar(char16_t(match.captured(1).toUShort(nullptr, 16)));
+        last = match.capturedEnd();
+    }
+    out += text.mid(last);
+    return out;
+}
+
+QString TextOps::rot13(const QString& text) {
+    QString out;
+    out.reserve(text.size());
+    for (const QChar ch : text) {
+        const char16_t c = ch.unicode();
+        if (c >= 'a' && c <= 'z')
+            out += QChar(char16_t('a' + (c - 'a' + 13) % 26));
+        else if (c >= 'A' && c <= 'Z')
+            out += QChar(char16_t('A' + (c - 'A' + 13) % 26));
+        else
+            out += ch;
+    }
+    return out;
+}
+
+QString TextOps::toHex(const QString& text) {
+    return QString::fromLatin1(text.toUtf8().toHex(' ')).toUpper();
+}
+
+QString TextOps::fromHex(const QString& text, bool* ok) {
+    QString clean = text;
+    clean.remove(QRegularExpression(QStringLiteral("\\s")));
+    const QByteArray decoded = QByteArray::fromHex(clean.toLatin1());
+    if (ok)
+        *ok = !decoded.isEmpty() || clean.isEmpty();
+    return QString::fromUtf8(decoded);
+}
+
+QString TextOps::digest(const QString& text, QCryptographicHash::Algorithm algorithm) {
+    return QString::fromLatin1(
+        QCryptographicHash::hash(text.toUtf8(), algorithm).toHex().toUpper());
 }
 
 } // namespace PadForge

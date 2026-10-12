@@ -40,6 +40,10 @@ private slots:
     void wordCountCommand();
     void trimTrailingWhitespaceCommand();
     void sortLinesCommand();
+    void replEvaluates();
+    void replExpressionRetry();
+    void replRoutesPrintThroughOutputSink();
+    void replSurfacesErrors();
 };
 
 void PluginTest::loadsSamplePlugins()
@@ -87,6 +91,62 @@ void PluginTest::sortLinesCommand()
 
     context.commands.value(QStringLiteral("Sort Lines"))();
     QCOMPARE(context.text, QStringLiteral("apple\nbanana\ncherry\n"));
+}
+
+void PluginTest::replEvaluates()
+{
+    FakeContext context;
+    PluginHost host(&context);
+    QVERIFY(host.hasLua());
+
+    QString result;
+    QString error;
+    QVERIFY(host.evaluateLua(QStringLiteral("g = 40"), nullptr, &error));
+    QVERIFY(error.isEmpty());
+    QVERIFY(host.evaluateLua(QStringLiteral("g + 2"), &result, &error));
+    QCOMPARE(result, QStringLiteral("42"));
+
+    context.text = QStringLiteral("alpha\nbeta");
+    QVERIFY(host.evaluateLua(QStringLiteral("padforge.line_count()"), &result));
+    QCOMPARE(result, QStringLiteral("2"));
+}
+
+void PluginTest::replExpressionRetry()
+{
+    FakeContext context;
+    PluginHost host(&context);
+
+    QString result;
+    QVERIFY(host.evaluateLua(QStringLiteral("1+1"), &result));
+    QCOMPARE(result, QStringLiteral("2"));
+
+    QVERIFY(host.evaluateLua(QStringLiteral("(3 * 4) + 1"), &result));
+    QCOMPARE(result, QStringLiteral("13"));
+
+    QVERIFY(host.evaluateLua(QStringLiteral("'a' .. 'b'"), &result));
+    QCOMPARE(result, QStringLiteral("ab"));
+}
+
+void PluginTest::replRoutesPrintThroughOutputSink()
+{
+    FakeContext context;
+    PluginHost host(&context);
+
+    QStringList printed;
+    host.setOutputSink([&printed](const QString& line) { printed.append(line); });
+
+    QVERIFY(host.evaluateLua(QStringLiteral("print('hello', 42)")));
+    QCOMPARE(printed, QStringList({QStringLiteral("hello\t42")}));
+}
+
+void PluginTest::replSurfacesErrors()
+{
+    FakeContext context;
+    PluginHost host(&context);
+
+    QString error;
+    QVERIFY(!host.evaluateLua(QStringLiteral("this is not lua"), nullptr, &error));
+    QVERIFY(!error.isEmpty());
 }
 
 QTEST_MAIN(PluginTest)

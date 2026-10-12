@@ -1,6 +1,7 @@
 #include "MainWindow.h"
 
 #include "ColumnEditorDialog.h"
+#include "ConsolePanel.h"
 #include "DocumentMap.h"
 #include "DocumentSummaryDialog.h"
 #include "EditorWidget.h"
@@ -19,6 +20,7 @@
 
 #include <QAction>
 #include <QApplication>
+#include <QClipboard>
 #include <QCloseEvent>
 #include <QCoreApplication>
 #include <QDialog>
@@ -318,6 +320,10 @@ void MainWindow::updateStatus() {
     m_statusEol->setText(EncodingDetector::eolName(editor->eol()));
     const Language* language = LanguageManager::byId(editor->languageId());
     m_statusLanguage->setText(language ? language->name : QStringLiteral("Normal Text"));
+    if (m_statusReadOnly)
+        m_statusReadOnly->setText(editor->isReadOnly() ? tr("R/O") : QString());
+    if (m_actReadOnly)
+        m_actReadOnly->setChecked(editor->isReadOnly());
 }
 
 void MainWindow::closeEvent(QCloseEvent* event) {
@@ -491,6 +497,16 @@ void MainWindow::createMenus() {
     connect(aSaveAll, &QAction::triggered, this, &MainWindow::saveAll);
     QAction* aReload = fileMenu->addAction(tr("Re&load from Disk"));
     connect(aReload, &QAction::triggered, this, &MainWindow::reloadCurrent);
+
+    fileMenu->addSeparator();
+    m_actReadOnly = fileMenu->addAction(tr("&Read-Only Mode"));
+    m_actReadOnly->setCheckable(true);
+    connect(m_actReadOnly, &QAction::toggled, this, &MainWindow::toggleReadOnlyMode);
+    QAction* aCopyName = fileMenu->addAction(tr("Copy File &Name"));
+    connect(aCopyName, &QAction::triggered, this, &MainWindow::copyFileName);
+    QAction* aCopyPath = fileMenu->addAction(tr("Copy Full Pat&h"));
+    connect(aCopyPath, &QAction::triggered, this, &MainWindow::copyFilePath);
+    fileMenu->addSeparator();
 
     QMenu* exportMenu = fileMenu->addMenu(tr("&Export"));
     exportMenu->addAction(tr("&HTML..."), this, &MainWindow::exportCurrentHtml);
@@ -797,6 +813,17 @@ void MainWindow::createMenus() {
         }
     });
     connect(m_mapDock, &QDockWidget::visibilityChanged, aDocMap, &QAction::setChecked);
+    QAction* aConsole = viewMenu->addAction(tr("Script &Console"));
+    aConsole->setCheckable(true);
+    connect(aConsole, &QAction::toggled, this, [this](bool on) {
+        if (on) {
+            m_consoleDock->show();
+            m_consoleDock->raise();
+        } else {
+            m_consoleDock->hide();
+        }
+    });
+    connect(m_consoleDock, &QDockWidget::visibilityChanged, aConsole, &QAction::setChecked);
     viewMenu->addSeparator();
     QAction* aMoveView = viewMenu->addAction(tr("Move to Other View"));
     connect(aMoveView, &QAction::triggered, this, &MainWindow::moveToOtherView);
@@ -906,6 +933,63 @@ void MainWindow::createMenus() {
         }
     });
 
+    QMenu* toolsMenu = bar->addMenu(tr("&Tools"));
+    QMenu* convertMenu = toolsMenu->addMenu(tr("&Convert"));
+    convertMenu->addAction(tr("Base64 Encode"), this, [this]() {
+        applyTextConversion(&TextOps::base64Encode, tr("Base64 encode"));
+    });
+    convertMenu->addAction(tr("Base64 Decode"), this, [this]() {
+        applyTextConversion([](const QString& text) { return TextOps::base64Decode(text); },
+                            tr("Base64 decode"));
+    });
+    convertMenu->addAction(tr("URL Encode"), this, [this]() {
+        applyTextConversion(&TextOps::urlEncode, tr("URL encode"));
+    });
+    convertMenu->addAction(tr("URL Decode"), this, [this]() {
+        applyTextConversion(&TextOps::urlDecode, tr("URL decode"));
+    });
+    convertMenu->addAction(tr("HTML Entities Encode"), this, [this]() {
+        applyTextConversion(&TextOps::htmlEncode, tr("HTML encode"));
+    });
+    convertMenu->addAction(tr("HTML Entities Decode"), this, [this]() {
+        applyTextConversion(&TextOps::htmlDecode, tr("HTML decode"));
+    });
+    convertMenu->addAction(tr("Unicode Escape"), this, [this]() {
+        applyTextConversion(&TextOps::unicodeEscape, tr("Unicode escape"));
+    });
+    convertMenu->addAction(tr("Unicode Unescape"), this, [this]() {
+        applyTextConversion(&TextOps::unicodeUnescape, tr("Unicode unescape"));
+    });
+    convertMenu->addAction(tr("Rot13"), this,
+                           [this]() { applyTextConversion(&TextOps::rot13, tr("Rot13")); });
+    convertMenu->addAction(tr("Text to Hex"), this,
+                           [this]() { applyTextConversion(&TextOps::toHex, tr("Text to hex")); });
+    convertMenu->addAction(tr("Hex to Text"), this, [this]() {
+        applyTextConversion([](const QString& text) { return TextOps::fromHex(text); },
+                            tr("Hex to text"));
+    });
+
+    QMenu* digestMenu = toolsMenu->addMenu(tr("&Hash / Digest"));
+    struct DigestChoice {
+        const char* label;
+        QCryptographicHash::Algorithm algorithm;
+    };
+    const DigestChoice digests[] = {
+        {"MD5", QCryptographicHash::Md5},        {"SHA-1", QCryptographicHash::Sha1},
+        {"SHA-256", QCryptographicHash::Sha256}, {"SHA-384", QCryptographicHash::Sha384},
+        {"SHA-512", QCryptographicHash::Sha512},
+    };
+    for (const DigestChoice& choice : digests) {
+        const QCryptographicHash::Algorithm algorithm = choice.algorithm;
+        const QString label = tr(choice.label);
+        digestMenu->addAction(label, this,
+                              [this, algorithm, label]() { showDigest(algorithm, label); });
+    }
+
+    toolsMenu->addSeparator();
+    QAction* aConsoleShow = toolsMenu->addAction(tr("Script &Console"));
+    connect(aConsoleShow, &QAction::triggered, this, &MainWindow::showScriptConsole);
+
     QMenu* settingsMenu = bar->addMenu(tr("&Settings"));
     QAction* aRun = settingsMenu->addAction(tr("&Run..."));
     aRun->setShortcut(QKeySequence(QStringLiteral("F5")));
@@ -960,7 +1044,9 @@ void MainWindow::createStatusBar() {
     m_statusEncoding = new QLabel(this);
     m_statusEol = new QLabel(this);
     m_statusPosition = new QLabel(this);
+    m_statusReadOnly = new QLabel(this);
     statusBar()->addWidget(m_statusLanguage, 1);
+    statusBar()->addPermanentWidget(m_statusReadOnly);
     statusBar()->addPermanentWidget(m_statusEncoding);
     statusBar()->addPermanentWidget(m_statusEol);
     statusBar()->addPermanentWidget(m_statusPosition);
@@ -996,6 +1082,13 @@ void MainWindow::createDocks() {
         else
             m_documentMap->detachEditor();
     });
+
+    m_consolePanel = new ConsolePanel(m_pluginHost, this);
+    m_consoleDock = new QDockWidget(tr("Script Console"), this);
+    m_consoleDock->setObjectName(QStringLiteral("consoleDock"));
+    m_consoleDock->setWidget(m_consolePanel);
+    addDockWidget(Qt::BottomDockWidgetArea, m_consoleDock);
+    m_consoleDock->hide();
 }
 
 void MainWindow::createPluginMenu() {
@@ -1509,6 +1602,57 @@ void MainWindow::printCurrent(bool preview) {
     delete document;
 }
 
+void MainWindow::applyTextConversion(const std::function<QString(const QString&)>& transform,
+                                     const QString& label) {
+    EditorWidget* editor = currentEditor();
+    if (!editor)
+        return;
+    editor->transformSelectionOrDocument(transform);
+    showMessage(tr("%1 applied").arg(label));
+}
+
+void MainWindow::showDigest(QCryptographicHash::Algorithm algorithm, const QString& name) {
+    EditorWidget* editor = currentEditor();
+    if (!editor)
+        return;
+    const QString hash = TextOps::digest(editor->selectedTextOrDocument(), algorithm);
+    QApplication::clipboard()->setText(hash);
+    QMessageBox::information(this, name, tr("%1 (copied to clipboard):\n%2").arg(name, hash));
+}
+
+void MainWindow::showScriptConsole() {
+    m_consoleDock->show();
+    m_consoleDock->raise();
+}
+
+void MainWindow::toggleReadOnlyMode(bool readOnly) {
+    EditorWidget* editor = currentEditor();
+    if (!editor)
+        return;
+    editor->setReadOnly(readOnly);
+    updateStatus();
+}
+
+void MainWindow::copyFileName() {
+    EditorWidget* editor = currentEditor();
+    if (!editor || editor->filePath().isEmpty()) {
+        showMessage(tr("The current document has no file path."));
+        return;
+    }
+    QApplication::clipboard()->setText(QFileInfo(editor->filePath()).fileName());
+    showMessage(tr("Copied file name"));
+}
+
+void MainWindow::copyFilePath() {
+    EditorWidget* editor = currentEditor();
+    if (!editor || editor->filePath().isEmpty()) {
+        showMessage(tr("The current document has no file path."));
+        return;
+    }
+    QApplication::clipboard()->setText(editor->filePath());
+    showMessage(tr("Copied full path"));
+}
+
 void MainWindow::loadSession() {
     bool ok = false;
     const Session session = SessionManager::load(SessionManager::defaultPath(), &ok);
@@ -1525,6 +1669,8 @@ void MainWindow::loadSession() {
             continue;
         if (!file.language.isEmpty())
             editor->setLanguage(file.language);
+        if (file.readOnly)
+            editor->setReadOnly(true);
         editor->applySavedState(file.cursor, file.anchor, file.firstVisibleLine,
                                 file.bookmarkLines);
     }
@@ -1561,6 +1707,7 @@ void MainWindow::saveSession() {
         file.language = editor->languageId();
         file.encoding = editor->encoding().canonicalName();
         file.eol = EncodingDetector::eolName(editor->eol());
+        file.readOnly = editor->isReadOnly();
         file.bookmarkLines = editor->bookmarkLines();
         return file;
     };

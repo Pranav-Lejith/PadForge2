@@ -6,6 +6,7 @@
 #include "Session.h"
 #include "Settings.h"
 
+#include <QCryptographicHash>
 #include <QList>
 #include <QMainWindow>
 
@@ -29,6 +30,7 @@ class RunDialog;
 class ExplorerPanel;
 class DocumentMap;
 class FloatingWindow;
+class ConsolePanel;
 
 class MainWindow : public QMainWindow, public PluginContext {
     Q_OBJECT
@@ -127,6 +129,15 @@ private:
     void exportCurrentRtf();
     void printCurrent(bool preview);
 
+    // Tools: conversions, digests, script console, read-only
+    void applyTextConversion(const std::function<QString(const QString&)>& transform,
+                             const QString& label);
+    void showDigest(QCryptographicHash::Algorithm algorithm, const QString& name);
+    void showScriptConsole();
+    void toggleReadOnlyMode(bool readOnly);
+    void copyFileName();
+    void copyFilePath();
+
     // Session / recents / macros / plugins
     void loadSession();
     void saveSession();
@@ -153,12 +164,15 @@ private:
     QDockWidget* m_explorerDock = nullptr;
     DocumentMap* m_documentMap = nullptr;
     QDockWidget* m_mapDock = nullptr;
+    ConsolePanel* m_consolePanel = nullptr;
+    QDockWidget* m_consoleDock = nullptr;
     QList<FloatingWindow*> m_floatingWindows;
 
     QLabel* m_statusPosition = nullptr;
     QLabel* m_statusEncoding = nullptr;
     QLabel* m_statusEol = nullptr;
     QLabel* m_statusLanguage = nullptr;
+    QLabel* m_statusReadOnly = nullptr;
 
     QMenu* m_recentMenu = nullptr;
     QMenu* m_languageMenu = nullptr;
@@ -183,6 +197,7 @@ private:
     QAction* m_actAlwaysOnTop = nullptr;
     QAction* m_actSplitHorizontal = nullptr;
     QAction* m_actSplitVertical = nullptr;
+    QAction* m_actReadOnly = nullptr;
 
     RecentFiles m_recent{15};
     PluginHost* m_pluginHost = nullptr;

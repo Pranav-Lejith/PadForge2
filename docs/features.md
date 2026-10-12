@@ -70,6 +70,25 @@ being a port of its code.
 - **Macros**: record, store and replay editing sequences.
 - **Plugins**: a small, stable C ABI plus a sandboxed **Lua** runtime. Both
   plugin styles share the same host capability surface.
+- **Script Console** (`View > Script Console` or `Tools > Script Console`): an
+  interactive **Lua REPL** sharing the plugin runtime, with command history
+  (Up/Down), `print(...)` output and error reporting. The same `padforge` table
+  available to plugins (document text, line count, go-to-line, language, …) is
+  available at the prompt.
+
+## Tools
+
+- **Convert** submenu: Base64 encode/decode, URL percent-encode/decode, HTML
+  entity encode/decode, Unicode (`\uXXXX`) escape/unescape, Rot13, and
+  text↔hex.
+- **Hash / Digest** submenu: MD5, SHA-1, SHA-256, SHA-384 and SHA-512 of the
+  selection (or the whole document when nothing is selected), copied to the
+  clipboard.
+- Conversions act on the current selection, or on the entire document when there
+  is no selection.
+- **Copy File Name** / **Copy Full Path** for the active document.
+- **Read-Only Mode** toggle plus automatic read-only detection for files that are
+  not writable, shown as **R/O** in the status bar and preserved across sessions.
 
 ## Appearance
 

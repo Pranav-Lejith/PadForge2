@@ -4,7 +4,6 @@
 
 #include <QString>
 #include <QStringList>
-
 #include <functional>
 #include <memory>
 #include <vector>
@@ -57,6 +56,18 @@ public:
 
     const PadForgeHost* cHost() const { return &m_cHost; }
 
+    // Run a Lua statement or expression in the shared plugin state. If `code`
+    // is not valid as a statement it is retried as an expression, so a REPL
+    // can evaluate bare values such as `1+1`. The expression's value (if any)
+    // is returned in `result`; failures set `error` and return false.
+    bool evaluateLua(const QString& code, QString* result = nullptr, QString* error = nullptr);
+
+    // Script output sink: `print(...)` from Lua is routed here when set,
+    // otherwise the PluginContext::showMessage fallback is used. The GUI
+    // console installs itself as the sink.
+    void setOutputSink(std::function<void(const QString&)> sink);
+    void emitOutput(const QString& text);
+
 #ifdef PADFORGE_ENABLE_LUA
     lua_State* luaState() const { return m_lua; }
     bool hasLua() const;
@@ -71,6 +82,7 @@ private:
     QString m_lastError;
     QStringList m_loadedPlugins;
     QString m_textBuffer;
+    std::function<void(const QString&)> m_outputSink;
 
     struct NativeHandle;
     std::vector<std::unique_ptr<NativeHandle>> m_native;
