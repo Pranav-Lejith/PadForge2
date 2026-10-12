@@ -36,11 +36,9 @@ unlink "$source_archive"
 
 sed -i "s/^pkgver=.*/pkgver=${version}/" "$pkgbuild_dir/PKGBUILD"
 sed -i "s/^sha256sums=.*/sha256sums=('${source_hash}')/" "$pkgbuild_dir/PKGBUILD"
-makepkg --printsrcinfo > "$pkgbuild_dir/.SRCINFO"
-
 useradd --create-home builder
 chown -R builder:builder "$pkgbuild_dir"
-runuser -u builder -- sh -c "cd '$pkgbuild_dir' && makepkg --syncdeps --noconfirm --cleanbuild"
+runuser -u builder -- sh -c "cd '$pkgbuild_dir' && makepkg --printsrcinfo > .SRCINFO && makepkg --syncdeps --noconfirm --cleanbuild"
 
 package_file="$(find "$pkgbuild_dir" -maxdepth 1 -type f \
     -name 'padforge-*.pkg.tar.zst' ! -name '*-debug-*' -print -quit)"
