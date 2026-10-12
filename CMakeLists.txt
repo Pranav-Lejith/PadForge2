@@ -26,7 +26,7 @@ option(PADFORGE_ENABLE_LUA "Enable the Lua plugin runtime" ON)
 option(PADFORGE_USE_SYSTEM_SCINTILLA
     "Use a system Scintilla/QScintilla instead of the pinned sources" OFF)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Network Widgets)
 
 if(PADFORGE_USE_SYSTEM_SCINTILLA)
     message(STATUS "PadForge: using system Qt6 only, expecting a system Scintilla provider")

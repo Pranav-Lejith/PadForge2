@@ -7,6 +7,7 @@
 #include "SearchEngine.h"
 #include "SearchResultsPanel.h"
 #include "TextOps.h"
+#include "UpdateChecker.h"
 
 #include <QClipboard>
 #include <QFile>
@@ -48,7 +49,17 @@ private slots:
     void tabTitleReflectsModification();
     void foldCommandsToggleVisibility();
     void matchingBraceNavigation();
+    void updateVersionComparison();
 };
+
+void SmokeTest::updateVersionComparison() {
+    QVERIFY(UpdateChecker::isNewerVersion(QStringLiteral("0.1.0"), QStringLiteral("v0.2.0")));
+    QVERIFY(UpdateChecker::isNewerVersion(QStringLiteral("1.9.9"), QStringLiteral("1.10.0")));
+    QVERIFY(!UpdateChecker::isNewerVersion(QStringLiteral("0.2.0"), QStringLiteral("v0.2.0")));
+    QVERIFY(!UpdateChecker::isNewerVersion(QStringLiteral("0.3.0"), QStringLiteral("v0.2.0")));
+    QVERIFY(
+        !UpdateChecker::isNewerVersion(QStringLiteral("development"), QStringLiteral("v0.2.0")));
+}
 
 void SmokeTest::newDocumentHoldsText() {
     MainWindow window;

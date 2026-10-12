@@ -1,4 +1,4 @@
-find_package(Qt6 REQUIRED COMPONENTS PrintSupport)
+find_package(Qt6 REQUIRED COMPONENTS Network PrintSupport)
 
 add_library(padforge_gui STATIC
     MainWindow.cpp
@@ -34,15 +34,18 @@ add_library(padforge_gui STATIC
     CompareDocumentsDialog.cpp
     CompareDocumentsDialog.h
     SearchResultsPanel.cpp
-    SearchResultsPanel.h)
+    SearchResultsPanel.h
+    UpdateChecker.cpp
+    UpdateChecker.h)
 
 target_include_directories(padforge_gui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(padforge_gui PUBLIC padforge_core PadForge::scintilla PadForge::lexilla
-    Qt6::Widgets Qt6::PrintSupport)
+    Qt6::Widgets Qt6::Network Qt6::PrintSupport)
 target_compile_definitions(padforge_gui PUBLIC SCINTILLA_QT=1)
 
 add_executable(padforge main.cpp)
 target_link_libraries(padforge PRIVATE padforge_gui)
+target_compile_definitions(padforge PRIVATE PADFORGE_VERSION="${PROJECT_VERSION}")
 
 if(APPLE)
     set_target_properties(padforge PROPERTIES

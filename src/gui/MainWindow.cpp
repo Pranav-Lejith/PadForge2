@@ -23,6 +23,7 @@
 #include "SearchResultsPanel.h"
 #include "TextOps.h"
 #include "Theme.h"
+#include "UpdateChecker.h"
 
 #include <QAction>
 #include <QApplication>
@@ -183,6 +184,11 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     setTheme(m_themeId);
     loadPlugins();
     loadSession();
+
+    m_updateChecker = new UpdateChecker(this);
+    QTimer::singleShot(2000, m_updateChecker, [this]() {
+        m_updateChecker->checkForUpdates(this);
+    });
 
     QSettings crashed("PadForge", "PadForge");
     const bool cleanShutdown = crashed.value(QStringLiteral("backup/cleanShutdown"), true).toBool();

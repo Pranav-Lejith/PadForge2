@@ -103,6 +103,12 @@ PadForge brings the familiar, efficient editing experience popularised by Notepa
 The source repository and release downloads are public. **You do not need a
 GitHub account** to browse or download PadForge.
 
+PadForge checks the public GitHub release for updates at most once per day. If a
+new version is available, it shows an optional notification; choose **Ignore
+this version** or close the notification to dismiss it. Choosing **View update**
+opens the release page in your browser. PadForge never installs updates
+automatically.
+
 ### AppImage
 
 The AppImage is the easiest option on most Linux distributions. It bundles the
@@ -178,7 +184,7 @@ launch, Control-click the app in Finder and choose **Open**.
 
 - **CMake** ≥ 3.21
 - **C++20** compiler (GCC 13+ or Clang 15+)
-- **Qt 6** (Core, Gui, Widgets, PrintSupport, Core5Compat, Test)
+- **Qt 6** (Core, Gui, Network, Widgets, PrintSupport, Core5Compat, Test)
 - **Ninja** (recommended) or Make
 - **Python 3** (required for Scintilla/Lexilla WidgetGen)
 - **Lua 5.4** (optional but recommended for plugin support)

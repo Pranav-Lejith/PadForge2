@@ -10,7 +10,7 @@ int main(int argc, char** argv)
 {
     QApplication app(argc, argv);
     QCoreApplication::setApplicationName(QStringLiteral("PadForge"));
-    QCoreApplication::setApplicationVersion(QStringLiteral("0.1.0"));
+    QCoreApplication::setApplicationVersion(QStringLiteral(PADFORGE_VERSION));
     QCoreApplication::setOrganizationName(QStringLiteral("PadForge"));
     QCoreApplication::setOrganizationDomain(QStringLiteral("padforge.local"));
     QApplication::setApplicationDisplayName(QStringLiteral("PadForge"));

@@ -9,6 +9,7 @@ finish-args:
   - --socket=wayland
   - --device=dri
   - --filesystem=home
+  - --share=network
   - --talk-name=org.freedesktop.portal.FileChooser
 separate-locales: false
 

@@ -37,6 +37,7 @@ class ConsolePanel;
 class FunctionListPanel;
 class CharacterMapPanel;
 class SearchResultsPanel;
+class UpdateChecker;
 
 class MainWindow : public QMainWindow, public PluginContext {
     Q_OBJECT
@@ -230,6 +231,7 @@ private:
     QDockWidget* m_searchResultsDock = nullptr;
 
     QTimer m_backupTimer;
+    UpdateChecker* m_updateChecker = nullptr;
     bool m_syncScroll = false;
     bool m_syncingScroll = false;
     QAction* m_actSyncScroll = nullptr;
