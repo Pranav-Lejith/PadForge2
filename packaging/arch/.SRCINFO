@@ -1,0 +1,20 @@
+pkgbase = padforge
+	pkgdesc = Fast native text editor with a Notepad++-style workflow
+	pkgver = 0.1.0
+	pkgrel = 1
+	url = https://github.com/Pranav-Lejith/PadForge2
+	arch = x86_64
+	arch = aarch64
+	license = GPL-3.0-or-later
+	makedepends = cmake
+	makedepends = ninja
+	makedepends = gcc
+	makedepends = python
+	depends = qt6-base
+	depends = qt6-5compat
+	depends = lua54
+	depends = hicolor-icon-theme
+	source = padforge-0.1.0.tar.gz::https://github.com/Pranav-Lejith/PadForge2/archive/v0.1.0.tar.gz
+	sha256sums = 27cba5f65a42237553368518fa91d97668fb6de0d6695d7c5586ba2d2af79283
+
+pkgname = padforge

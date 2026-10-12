@@ -11,13 +11,15 @@ pkgdesc="Fast native text editor with a Notepad++-style workflow"
 arch=('x86_64' 'aarch64')
 url="https://github.com/Pranav-Lejith/PadForge2"
 license=('GPL-3.0-or-later')
-depends=('qt6-base' 'qt6-5compat' 'lua' 'hicolor-icon-theme')
+depends=('qt6-base' 'qt6-5compat' 'lua54' 'hicolor-icon-theme')
 makedepends=('cmake' 'ninja' 'gcc' 'python')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz")
-sha256sums=('SKIP')
+sha256sums=('27cba5f65a42237553368518fa91d97668fb6de0d6695d7c5586ba2d2af79283')
+
+_srcdir="PadForge2-$pkgver"
 
 build() {
-    cmake -S "$pkgname-$pkgver" -B build -G Ninja \
+    cmake -S "$_srcdir" -B build -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_INSTALL_PREFIX=/usr
     cmake --build build
@@ -29,8 +31,8 @@ check() {
 
 package() {
     DESTDIR="$pkgdir" cmake --install build
-    install -Dm644 "$pkgname-$pkgver/LICENSE" \
+    install -Dm644 "$_srcdir/LICENSE" \
         "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
     install -d "$pkgdir/usr/share/PadForge/plugins"
-    cp -r "$pkgname-$pkgver/plugins/lua/." "$pkgdir/usr/share/PadForge/plugins/"
+    cp -r "$_srcdir/plugins/lua/." "$pkgdir/usr/share/PadForge/plugins/"
 }
