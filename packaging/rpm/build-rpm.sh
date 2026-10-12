@@ -10,13 +10,13 @@ if [[ -z "${version}" ]]; then
     echo "Could not determine PadForge version from CMakeLists.txt" >&2
     exit 1
 fi
-if ! git -C "${repo_root}" rev-parse --verify HEAD >/dev/null 2>&1; then
+if ! git -c safe.directory="${repo_root}" -C "${repo_root}" rev-parse --verify HEAD >/dev/null 2>&1; then
     echo "Run this script from a Git checkout so the source snapshot is reproducible" >&2
     exit 1
 fi
 
 mkdir -p "${rpm_topdir}"/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
-git -C "${repo_root}" archive --format=tar \
+git -c safe.directory="${repo_root}" -C "${repo_root}" archive --format=tar \
     --prefix="PadForge2-${version}/" HEAD |
     gzip -n > "${rpm_topdir}/SOURCES/padforge-${version}.tar.gz"
 download_source() {
