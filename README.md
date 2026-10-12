@@ -139,6 +139,20 @@ does not require signing in. Arch users can use the signed pacman repository
 below. Building from source is for contributors and requires the development
 dependencies below.
 
+### Fedora
+
+Enable the public COPR repository and install PadForge with DNF:
+
+```bash
+sudo dnf install dnf-plugins-core
+sudo dnf copr enable amphibiar/padforge
+sudo dnf install padforge
+```
+
+After enabling the repository, Fedora will include PadForge in normal DNF
+updates. To remove it, run `sudo dnf remove padforge`; disable the COPR source
+with `sudo dnf copr disable amphibiar/padforge` if you no longer want it.
+
 ### Arch Linux
 
 Download the public repository key and configuration, then verify that the
