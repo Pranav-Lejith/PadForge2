@@ -129,7 +129,7 @@ being a port of its code.
 - **Preferences** dialog and a **Settings** menu persist editor options
   (font, tab width, word wrap, margins, whitespace/EOL display, edge line,
   completion, bracket and tag auto-close, calltips, backup on save, periodic
-  snapshots, synchronized scrolling) across sessions.
+  snapshots, synchronized scrolling) and recent-files list across sessions.
 
 ## Window management
 
