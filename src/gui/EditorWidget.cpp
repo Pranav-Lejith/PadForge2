@@ -1115,6 +1115,11 @@ void EditorWidget::convertCaseSentence() {
         [](const QString& text) { return TextOps::convertCase(text, CaseMode::Sentence); });
 }
 
+void EditorWidget::convertCaseInvert() {
+    applyToSelectedLines(
+        [](const QString& text) { return TextOps::convertCase(text, CaseMode::Invert); });
+}
+
 void EditorWidget::trimTrailingWhitespace() {
     applyToSelectedLines(TextOps::trimTrailing);
 }
@@ -1381,16 +1386,16 @@ void EditorWidget::triggerSymbolCompletion() {
 
 void EditorWidget::handleTagAutoClose() {
     static const QSet<QString> tagLanguages = {
-        QStringLiteral("html"), QStringLiteral("htm"),  QStringLiteral("xml"),
+        QStringLiteral("html"),  QStringLiteral("htm"), QStringLiteral("xml"),
         QStringLiteral("xhtml"), QStringLiteral("php"), QStringLiteral("asp"),
-        QStringLiteral("jsp"),  QStringLiteral("svg"),  QStringLiteral("xsl"),
+        QStringLiteral("jsp"),   QStringLiteral("svg"), QStringLiteral("xsl"),
         QStringLiteral("vue"),
     };
     static const QSet<QString> voidElements = {
-        QStringLiteral("area"), QStringLiteral("base"), QStringLiteral("br"),
-        QStringLiteral("col"),  QStringLiteral("embed"), QStringLiteral("hr"),
-        QStringLiteral("img"),  QStringLiteral("input"), QStringLiteral("link"),
-        QStringLiteral("meta"), QStringLiteral("param"), QStringLiteral("source"),
+        QStringLiteral("area"),  QStringLiteral("base"),  QStringLiteral("br"),
+        QStringLiteral("col"),   QStringLiteral("embed"), QStringLiteral("hr"),
+        QStringLiteral("img"),   QStringLiteral("input"), QStringLiteral("link"),
+        QStringLiteral("meta"),  QStringLiteral("param"), QStringLiteral("source"),
         QStringLiteral("track"), QStringLiteral("wbr"),
     };
     if (!m_autoCloseTags || !tagLanguages.contains(m_languageId.toLower()))

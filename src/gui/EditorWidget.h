@@ -132,6 +132,7 @@ public:
     void convertCaseLower();
     void convertCaseTitle();
     void convertCaseSentence();
+    void convertCaseInvert();
     void trimTrailingWhitespace();
     void trimLeadingWhitespace();
     void trimWhitespace();

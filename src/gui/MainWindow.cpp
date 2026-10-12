@@ -1051,6 +1051,10 @@ void MainWindow::createMenus() {
         if (EditorWidget* editor = currentEditor())
             editor->convertCaseSentence();
     });
+    caseMenu->addAction(tr("iNVERT cASE"), this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->convertCaseInvert();
+    });
 
     auto* trimMenu = editMenu->addMenu(tr("Trim Trailing/Leading Space"));
     trimMenu->addAction(tr("Trim Trailing Space"), this, [this]() {
