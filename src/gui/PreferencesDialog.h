@@ -44,6 +44,8 @@ private:
     QCheckBox* m_highlightLine = nullptr;
     QCheckBox* m_autoCompletion = nullptr;
     QCheckBox* m_autoClose = nullptr;
+    QCheckBox* m_autoCloseTags = nullptr;
+    QCheckBox* m_calltips = nullptr;
     QCheckBox* m_changeHistory = nullptr;
 };
 

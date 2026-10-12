@@ -23,7 +23,9 @@ with [Lexilla](https://www.scintilla.org/Lexilla.html) for syntax highlighting.
   regular-expression modes, wrap-around, counts and "mark all".
 - **Find in Files**: search a directory tree with filters and jump to a hit.
 - **Bookmarks**, **code folding**, **line numbers**, **brace matching**,
-  **auto-indent** and smart auto-close.
+  **auto-indent**, smart auto-close and **HTML/XML tag auto-close**.
+- **Function List** outline dock and **parameter calltips** for C-like/Python
+  code.
 - **Line tools**: delete/duplicate/move lines, join & split, sort, remove
   duplicates, case conversion, trim whitespace, tabify/untabify.
 - **Column editor** (repeated text or numbered columns), **word completion**
@@ -39,7 +41,8 @@ with [Lexilla](https://www.scintilla.org/Lexilla.html) for syntax highlighting.
   with per-language style mapping, plus a **Preferences** dialog.
 - **Window** menu with `Alt+1..9` document jumps, split orientation, **full
   screen** (F11), always-on-top and a **Run...** (F5) command runner.
-- **Explorer dock**, **Document Map** minimap, and **floating windows**
+- **Explorer dock**, **Document Map** minimap, **Function List** and
+  **Character Map** docks, and **floating windows**
   (detach/reattach tabs, `Ctrl+Alt+D` to detach).
 - **Export to HTML/RTF** and **print** with highlighting, plus an **Insert** menu
   for date/time, GUIDs and the file name/path.

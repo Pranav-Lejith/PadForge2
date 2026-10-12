@@ -1,5 +1,7 @@
 #include "EditorWidget.h"
 #include "Encoding.h"
+#include "FunctionListPanel.h"
+#include "CharacterMapPanel.h"
 #include "MainWindow.h"
 #include "SearchEngine.h"
 #include "TextOps.h"
@@ -8,6 +10,7 @@
 #include <QFile>
 #include <QGuiApplication>
 #include <QRegularExpression>
+#include <QTableWidget>
 #include <QTemporaryDir>
 #include <QtTest>
 #include <Scintilla.h>
@@ -28,6 +31,8 @@ private slots:
     void bookmarkOperations();
     void exportAndInsertOperations();
     void readOnlyDetection();
+    void functionListPanelBuildsOutline();
+    void characterMapBuildsGrid();
 };
 
 void SmokeTest::newDocumentHoldsText() {
@@ -197,6 +202,44 @@ void SmokeTest::readOnlyDetection() {
     QVERIFY(editor.saveFileAs(path, &error));
     QVERIFY(!editor.isReadOnly());
     QCOMPARE(editor.documentText(), QStringLiteral("changed\n"));
+}
+
+void SmokeTest::functionListPanelBuildsOutline() {
+    EditorWidget editor;
+    editor.setLanguage(QStringLiteral("cpp"));
+    editor.setDocumentText(QStringLiteral("class Foo {\n"
+                                          "    void bar();\n"
+                                          "};\n"
+                                          "int baz(int a) {\n"
+                                          "    return a;\n"
+                                          "}\n"));
+
+    FunctionListPanel panel;
+    panel.attachEditor(&editor);
+    panel.refresh();
+    QCOMPARE(panel.topLevelItemCount(), 2);
+    QTreeWidgetItem* top = panel.topLevelItem(0);
+    QVERIFY(top->text(0).contains(QStringLiteral("Foo")));
+    QCOMPARE(top->childCount(), 1);
+    QVERIFY(top->child(0)->text(0).contains(QStringLiteral("bar")));
+    QCOMPARE(top->child(0)->data(0, Qt::UserRole).toInt(), 2);
+    QVERIFY(panel.topLevelItem(1)->text(0).contains(QStringLiteral("baz")));
+
+    EditorWidget other;
+    other.setLanguage(QStringLiteral("text"));
+    panel.attachEditor(&other);
+    panel.refresh();
+    QCOMPARE(panel.topLevelItemCount(), 0);
+}
+
+void SmokeTest::characterMapBuildsGrid() {
+    CharacterMapPanel panel;
+    auto* grid = panel.findChild<QTableWidget*>();
+    QVERIFY(grid != nullptr);
+    QCOMPARE(grid->columnCount(), 16);
+    QVERIFY(grid->rowCount() >= 6);
+    QVERIFY(grid->item(0, 0) != nullptr);
+    QCOMPARE(grid->item(0, 0)->text(), QStringLiteral(" ")); // U+0020 SPACE
 }
 
 QTEST_MAIN(SmokeTest)

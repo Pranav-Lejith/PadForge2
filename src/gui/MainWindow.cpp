@@ -1,6 +1,7 @@
 #include "MainWindow.h"
 
 #include "ColumnEditorDialog.h"
+#include "CharacterMapPanel.h"
 #include "ConsolePanel.h"
 #include "DocumentMap.h"
 #include "DocumentSummaryDialog.h"
@@ -10,6 +11,7 @@
 #include "FindInFilesPanel.h"
 #include "FindReplaceDialog.h"
 #include "FloatingWindow.h"
+#include "FunctionListPanel.h"
 #include "GotoLineDialog.h"
 #include "LanguageManager.h"
 #include "PreferencesDialog.h"
@@ -95,6 +97,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
         updateWindowMenu();
         updateLanguageMenu();
         updateDocumentMapSource();
+        updateFunctionListSource();
     });
     connect(m_subTabs, &QTabWidget::currentChanged, this, [this](int) {
         if (m_subTabs->currentWidget())
@@ -104,6 +107,7 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
         updateWindowMenu();
         updateLanguageMenu();
         updateDocumentMapSource();
+        updateFunctionListSource();
     });
     connect(m_mainTabs, &QTabWidget::tabCloseRequested, this, [this](int index) {
         closeEditor(qobject_cast<EditorWidget*>(m_mainTabs->widget(index)));
@@ -824,6 +828,30 @@ void MainWindow::createMenus() {
         }
     });
     connect(m_consoleDock, &QDockWidget::visibilityChanged, aConsole, &QAction::setChecked);
+    QAction* aFunctionList = viewMenu->addAction(tr("&Function List"));
+    aFunctionList->setCheckable(true);
+    connect(aFunctionList, &QAction::toggled, this, [this](bool on) {
+        if (on) {
+            m_functionListDock->show();
+            m_functionListDock->raise();
+        } else {
+            m_functionListDock->hide();
+        }
+    });
+    connect(m_functionListDock, &QDockWidget::visibilityChanged, aFunctionList,
+            &QAction::setChecked);
+    QAction* aCharacterMap = viewMenu->addAction(tr("Character Ma&p"));
+    aCharacterMap->setCheckable(true);
+    connect(aCharacterMap, &QAction::toggled, this, [this](bool on) {
+        if (on) {
+            m_characterMapDock->show();
+            m_characterMapDock->raise();
+        } else {
+            m_characterMapDock->hide();
+        }
+    });
+    connect(m_characterMapDock, &QDockWidget::visibilityChanged, aCharacterMap,
+            &QAction::setChecked);
     viewMenu->addSeparator();
     QAction* aMoveView = viewMenu->addAction(tr("Move to Other View"));
     connect(aMoveView, &QAction::triggered, this, &MainWindow::moveToOtherView);
@@ -1089,6 +1117,28 @@ void MainWindow::createDocks() {
     m_consoleDock->setWidget(m_consolePanel);
     addDockWidget(Qt::BottomDockWidgetArea, m_consoleDock);
     m_consoleDock->hide();
+
+    m_functionList = new FunctionListPanel(this);
+    m_functionListDock = new QDockWidget(tr("Function List"), this);
+    m_functionListDock->setObjectName(QStringLiteral("functionListDock"));
+    m_functionListDock->setWidget(m_functionList);
+    addDockWidget(Qt::RightDockWidgetArea, m_functionListDock);
+    m_functionListDock->hide();
+    connect(m_functionListDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
+        if (visible)
+            updateFunctionListSource();
+        else
+            m_functionList->detachEditor();
+    });
+
+    m_characterMap = new CharacterMapPanel(this);
+    m_characterMapDock = new QDockWidget(tr("Character Map"), this);
+    m_characterMapDock->setObjectName(QStringLiteral("characterMapDock"));
+    m_characterMapDock->setWidget(m_characterMap);
+    addDockWidget(Qt::RightDockWidgetArea, m_characterMapDock);
+    m_characterMapDock->hide();
+    connect(m_characterMap, &CharacterMapPanel::characterSelected, this,
+            [this](const QString& text) { insertText(text); });
 }
 
 void MainWindow::createPluginMenu() {
@@ -1485,6 +1535,15 @@ void MainWindow::updateDocumentMapSource() {
     m_documentMap->attachEditor(editor);
     if (m_explorerPanel && m_explorerPanel->isFollowing())
         m_explorerPanel->revealPath(editor->filePath());
+}
+
+void MainWindow::updateFunctionListSource() {
+    if (!m_functionList)
+        return;
+    if (EditorWidget* editor = currentEditor())
+        m_functionList->attachEditor(editor);
+    else
+        m_functionList->detachEditor();
 }
 
 void MainWindow::reattachToMain(EditorWidget* editor) {

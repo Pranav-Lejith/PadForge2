@@ -2,6 +2,7 @@
 
 #include "Encoding.h"
 #include "LanguageManager.h"
+#include "Outline.h"
 
 #include <ILexer.h>
 #include <Lexilla.h>
@@ -102,6 +103,12 @@ EditorWidget::EditorWidget(QWidget* parent) : QWidget(parent), m_editor(new Scin
         if (!m_updating)
             emit modificationChanged(dirty);
     });
+    connect(m_editor, &ScintillaEdit::modified, this, [this]() {
+        if (m_updating)
+            return;
+        emit textChanged();
+        scheduleOutlineRefresh();
+    });
     connect(m_editor, &ScintillaEdit::updateUi, this, [this](auto) {
         updateStatus();
         updateBracketMatch();
@@ -137,13 +144,23 @@ EditorWidget::EditorWidget(QWidget* parent) : QWidget(parent), m_editor(new Scin
                 }
             }
         } else if (ch == '(' || ch == '[' || ch == '{') {
-            if (!m_autoCloseBrackets)
-                return;
-            const char close = ch == '(' ? ')' : (ch == '[' ? ']' : '}');
-            m_editor->insertText(pos, QByteArray(1, close).constData());
-            m_editor->send(SCI_GOTOPOS, uptr_t(pos));
+            if (m_autoCloseBrackets) {
+                const char close = ch == '(' ? ')' : (ch == '[' ? ']' : '}');
+                m_editor->insertText(pos, QByteArray(1, close).constData());
+                m_editor->send(SCI_GOTOPOS, uptr_t(pos));
+            }
+            if (ch == '(' && m_calltips)
+                showCalltip();
+        } else if (ch == ')') {
+            m_editor->send(SCI_CALLTIPCANCEL);
+        } else if (ch == '>') {
+            handleTagAutoClose();
         }
     });
+
+    m_outlineTimer.setSingleShot(true);
+    m_outlineTimer.setInterval(400);
+    connect(&m_outlineTimer, &QTimer::timeout, this, &EditorWidget::refreshSignatures);
 }
 
 void EditorWidget::configureEditor() {
@@ -664,6 +681,7 @@ void EditorWidget::setEol(Eol eol) {
 void EditorWidget::setLanguage(const QString& id) {
     m_languageId = id;
     applyLanguageToEditor();
+    refreshSignatures();
     emit languageChanged(m_languageId);
 }
 
@@ -1084,6 +1102,8 @@ void EditorWidget::applySettings(const AppSettings& settings) {
     setUseTabs(settings.tabMode == QStringLiteral("tabs"));
     setHighlightCurrentLine(settings.highlightCurrentLine);
     setAutoCloseBrackets(settings.autoCloseBrackets);
+    setAutoCloseTags(settings.autoCloseTags);
+    setCalltips(settings.calltips);
     setChangeHistoryEnabled(settings.showChangeHistory);
     m_wordCompletionOn = settings.autoCompletion;
 }
@@ -1147,6 +1167,102 @@ void EditorWidget::setHighlightCurrentLine(bool highlighted) {
 
 void EditorWidget::setAutoCloseBrackets(bool enabled) {
     m_autoCloseBrackets = enabled;
+}
+
+void EditorWidget::setAutoCloseTags(bool enabled) {
+    m_autoCloseTags = enabled;
+}
+
+void EditorWidget::setCalltips(bool enabled) {
+    m_calltips = enabled;
+    if (enabled)
+        scheduleOutlineRefresh();
+    else
+        m_editor->send(SCI_CALLTIPCANCEL);
+}
+
+void EditorWidget::handleTagAutoClose() {
+    static const QSet<QString> tagLanguages = {
+        QStringLiteral("html"), QStringLiteral("htm"),  QStringLiteral("xml"),
+        QStringLiteral("xhtml"), QStringLiteral("php"), QStringLiteral("asp"),
+        QStringLiteral("jsp"),  QStringLiteral("svg"),  QStringLiteral("xsl"),
+        QStringLiteral("vue"),
+    };
+    static const QSet<QString> voidElements = {
+        QStringLiteral("area"), QStringLiteral("base"), QStringLiteral("br"),
+        QStringLiteral("col"),  QStringLiteral("embed"), QStringLiteral("hr"),
+        QStringLiteral("img"),  QStringLiteral("input"), QStringLiteral("link"),
+        QStringLiteral("meta"), QStringLiteral("param"), QStringLiteral("source"),
+        QStringLiteral("track"), QStringLiteral("wbr"),
+    };
+    if (!m_autoCloseTags || !tagLanguages.contains(m_languageId.toLower()))
+        return;
+
+    const int pos = int(m_editor->send(SCI_GETCURRENTPOS));
+    const int line = int(m_editor->send(SCI_LINEFROMPOSITION, uptr_t(pos)));
+    const int lineStart = int(m_editor->send(SCI_POSITIONFROMLINE, uptr_t(line)));
+    const QString before = QString::fromUtf8(m_editor->textRange(lineStart, pos));
+    const int open = before.lastIndexOf(QLatin1Char('<'));
+    if (open < 0)
+        return;
+
+    QString content = before.mid(open + 1);
+    if (content.endsWith(QLatin1Char('>')))
+        content.chop(1);
+    if (content.isEmpty() || content.startsWith(QLatin1Char('/')) ||
+        content.startsWith(QLatin1Char('!')) || content.startsWith(QLatin1Char('?')) ||
+        content.endsWith(QLatin1Char('/')))
+        return;
+
+    static const QRegularExpression nameRe(QStringLiteral("^([A-Za-z][\\w:.-]*)"));
+    const QRegularExpressionMatch match = nameRe.match(content);
+    if (!match.hasMatch())
+        return;
+    const QString name = match.captured(1);
+    if (voidElements.contains(name.toLower()))
+        return;
+
+    if (QString::fromUtf8(m_editor->textRange(pos, pos + 2)) == QLatin1String("</"))
+        return;
+
+    m_editor->insertText(pos, QStringLiteral("</%1>").arg(name).toUtf8());
+    m_editor->send(SCI_GOTOPOS, uptr_t(pos));
+}
+
+void EditorWidget::showCalltip() {
+    if (m_signatures.isEmpty())
+        return;
+    const int pos = int(m_editor->send(SCI_GETCURRENTPOS));
+    int i = pos - 2; // character before the just-typed '('
+    while (i >= 0) {
+        const int ch = int(m_editor->send(SCI_GETCHARAT, uptr_t(i)));
+        const bool word = (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
+                          (ch >= '0' && ch <= '9') || ch == '_';
+        if (!word)
+            break;
+        --i;
+    }
+    const QString name = QString::fromUtf8(m_editor->textRange(i + 1, pos - 1));
+    const auto it = m_signatures.constFind(name);
+    if (it == m_signatures.constEnd())
+        return;
+    const QByteArray tip = it.value().toUtf8();
+    m_editor->send(SCI_CALLTIPSHOW, uptr_t(pos), reinterpret_cast<sptr_t>(tip.constData()));
+}
+
+void EditorWidget::refreshSignatures() {
+    m_signatures.clear();
+    if (!m_calltips || m_largeFile || !OutlineParser::supports(m_languageId))
+        return;
+    const QList<OutlineItem> items = OutlineParser::parse(documentText(), m_languageId);
+    for (const OutlineItem& item : items) {
+        if (item.kind == QLatin1String("function"))
+            m_signatures.insert(item.name, item.signature);
+    }
+}
+
+void EditorWidget::scheduleOutlineRefresh() {
+    m_outlineTimer.start();
 }
 
 void EditorWidget::applyZoomFromSettings() {

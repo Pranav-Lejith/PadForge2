@@ -22,6 +22,8 @@ struct AppSettings {
     bool highlightCurrentLine = true;
     bool autoCompletion = true;
     bool autoCloseBrackets = true;
+    bool autoCloseTags = true;
+    bool calltips = true;
     bool showChangeHistory = true;
 
     int edgeColumn = 0;       // 0 disables the edge line

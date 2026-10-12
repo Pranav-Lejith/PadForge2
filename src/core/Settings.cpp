@@ -34,6 +34,8 @@ void AppSettings::load() {
     autoCompletion = s.value(QStringLiteral("editor/autoCompletion"), autoCompletion).toBool();
     autoCloseBrackets =
         s.value(QStringLiteral("editor/autoCloseBrackets"), autoCloseBrackets).toBool();
+    autoCloseTags = s.value(QStringLiteral("editor/autoCloseTags"), autoCloseTags).toBool();
+    calltips = s.value(QStringLiteral("editor/calltips"), calltips).toBool();
     showChangeHistory =
         s.value(QStringLiteral("editor/showChangeHistory"), showChangeHistory).toBool();
 
@@ -60,6 +62,8 @@ void AppSettings::save() const {
     s.setValue(QStringLiteral("editor/highlightCurrentLine"), highlightCurrentLine);
     s.setValue(QStringLiteral("editor/autoCompletion"), autoCompletion);
     s.setValue(QStringLiteral("editor/autoCloseBrackets"), autoCloseBrackets);
+    s.setValue(QStringLiteral("editor/autoCloseTags"), autoCloseTags);
+    s.setValue(QStringLiteral("editor/calltips"), calltips);
     s.setValue(QStringLiteral("editor/showChangeHistory"), showChangeHistory);
 
     s.setValue(QStringLiteral("editor/edgeColumn"), edgeColumn);

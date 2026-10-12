@@ -25,6 +25,10 @@ being a port of its code.
   across a line range.
 - **Word completion** (Ctrl+Space) fed by words already present in the document.
 - **Auto-indent** and **smart auto-close** of quotes and brackets.
+- **Auto-close HTML/XML tags**: typing `>` after an opening tag inserts the
+  matching closing tag, skipping void elements and comments.
+- **Parameter calltips**: typing `(` after a function defined in the current
+  document shows its signature (C-like and Python languages).
 - **Column / multi-cursor** editing mode.
 - **Large-file mode** that temporarily disables expensive features.
 - **Change-history markers**: green/red margin indicators flag lines modified since
@@ -97,7 +101,7 @@ being a port of its code.
 - Configurable zoom.
 - **Preferences** dialog and a **Settings** menu persist editor options
   (font, tab width, word wrap, margins, whitespace/EOL display, edge line,
-  completion and bracket auto-close) across sessions.
+  completion, bracket and tag auto-close, calltips) across sessions.
 
 ## Window management
 
@@ -110,6 +114,11 @@ being a port of its code.
   active document.
 - **Document Map** dock (View > Document Map): a clickable minimap of the whole
   file showing per-line styles, the visible viewport and the caret line.
+- **Function List** dock (View > Function List): a document outline of classes,
+  functions and (for Markdown) headings built from the active buffer; double-click
+  an entry to jump to its line. Refreshes as you type.
+- **Character Map** dock (View > Character Map): a browsable grid of Unicode
+  blocks; double-click a glyph to insert it at the caret.
 - Split **orientation** (horizontal or vertical) for the second tab group.
 - **Full screen** (F11) and **always on top**.
 - **Run...** (F5) executes a shell command, expanding `$(FULL_CURRENT_PATH)` /

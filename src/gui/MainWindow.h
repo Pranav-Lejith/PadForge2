@@ -31,6 +31,8 @@ class ExplorerPanel;
 class DocumentMap;
 class FloatingWindow;
 class ConsolePanel;
+class FunctionListPanel;
+class CharacterMapPanel;
 
 class MainWindow : public QMainWindow, public PluginContext {
     Q_OBJECT
@@ -121,6 +123,7 @@ private:
     // Explorer / document map / floating windows
     void openFolderDialog();
     void updateDocumentMapSource();
+    void updateFunctionListSource();
     void detachCurrentToFloating();
     void mergeFloatingWindows();
 
@@ -166,6 +169,10 @@ private:
     QDockWidget* m_mapDock = nullptr;
     ConsolePanel* m_consolePanel = nullptr;
     QDockWidget* m_consoleDock = nullptr;
+    FunctionListPanel* m_functionList = nullptr;
+    QDockWidget* m_functionListDock = nullptr;
+    CharacterMapPanel* m_characterMap = nullptr;
+    QDockWidget* m_characterMapDock = nullptr;
     QList<FloatingWindow*> m_floatingWindows;
 
     QLabel* m_statusPosition = nullptr;

@@ -54,6 +54,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Tools menu** with a **Convert** submenu (Base64, URL, HTML entities, Unicode
   escape, Rot13, text↔hex) and a **Hash / Digest** submenu (MD5, SHA-1/256/384/512),
   acting on the selection or the whole document (`TextOps` conversion helpers).
+- **Function List** dock (View > Function List): a document outline parsed from
+  the active buffer via the new `OutlineParser` core module (C-like, Python,
+  shell and Markdown), refreshed as you type, with click-to-jump.
+- **Character Map** dock (View > Character Map): a browsable grid of Unicode
+  blocks that inserts the selected glyph at the caret.
+- **Auto-close HTML/XML tags**: typing `>` inserts the matching closing tag,
+  skipping void elements, comments and declarations; toggleable in Preferences
+  (`editor/autoCloseTags`).
+- **Parameter calltips**: typing `(` after a function known to the outline shows
+  its signature via `SCI_CALLTIPSHOW`; toggleable in Preferences
+  (`editor/calltips`).
+- `EditorWidget::textChanged` signal emitted on every document modification.
+- `test_outline` unit suite and smoke tests for the Function List and Character
+  Map panels.
 
 ## [0.1.0] - 2026-10-11
 

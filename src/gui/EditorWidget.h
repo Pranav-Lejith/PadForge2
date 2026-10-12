@@ -6,6 +6,8 @@
 #include "TextOps.h"
 #include "Theme.h"
 
+#include <QHash>
+#include <QTimer>
 #include <QWidget>
 #include <functional>
 
@@ -148,6 +150,8 @@ public:
     void setUseTabs(bool useTabs);
     void setHighlightCurrentLine(bool highlighted);
     void setAutoCloseBrackets(bool enabled);
+    void setAutoCloseTags(bool enabled);
+    void setCalltips(bool enabled);
     void applyZoomFromSettings();
 
     // Word completion.
@@ -164,6 +168,7 @@ protected:
 
 signals:
     void modificationChanged(bool dirty);
+    void textChanged();
     void cursorPositionChanged(int line, int column);
     void filePathChanged(const QString& path);
     void languageChanged(const QString& id);
@@ -180,6 +185,10 @@ private:
     void updateStatus();
     void applyLanguageToEditor();
     void emitDocumentChanged();
+    void handleTagAutoClose();
+    void showCalltip();
+    void refreshSignatures();
+    void scheduleOutlineRefresh();
 
     // Replaces the given character range with UTF-8 text and re-selects it.
     void replaceRange(int start, int end, const QString& text);
@@ -209,9 +218,13 @@ private:
     bool m_updating = false;
     bool m_wordCompletionOn = true;
     bool m_autoCloseBrackets = true;
+    bool m_autoCloseTags = true;
+    bool m_calltips = true;
     int m_tabWidth = 4;
     QString m_fontFamily = QStringLiteral("Monospace");
     int m_fontSize = 11;
+    QHash<QString, QString> m_signatures;
+    QTimer m_outlineTimer;
 };
 
 } // namespace PadForge

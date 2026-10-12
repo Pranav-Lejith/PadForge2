@@ -76,5 +76,9 @@ PadForge follows the familiar Notepad++/desktop editor conventions.
 > The **Script Console** input runs on `Enter`, with `Up`/`Down` to cycle
 > through command history.
 
+> In the **Function List** dock, `Enter` or double-click jumps to the selected
+> symbol; in the **Character Map**, double-click inserts the selected glyph at
+> the caret.
+
 > Tip: every menu entry that has a shortcut also shows it next to the item, so
 > you can discover the full list from within the application.

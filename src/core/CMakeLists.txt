@@ -2,6 +2,7 @@ add_library(padforge_core STATIC
     Encoding.cpp
     LanguageManager.cpp
     Macro.cpp
+    Outline.cpp
     PluginHost.cpp
     SearchEngine.cpp
     Session.cpp
