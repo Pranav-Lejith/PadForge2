@@ -1,0 +1,63 @@
+name: Publish signed Arch repository
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing PadForge release tag to publish
+        required: true
+        default: v0.1.0
+        type: string
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: padforge-arch-repository
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Build and publish x86_64 pacman repository
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out release source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Build, test, and sign Arch package
+        env:
+          PADFORGE_TAG: ${{ inputs.tag || github.ref_name }}
+          PADFORGE_SIGNING_KEY: ${{ secrets.PADFORGE_SIGNING_KEY }}
+          PADFORGE_SIGNING_PASSPHRASE: ${{ secrets.PADFORGE_SIGNING_PASSPHRASE }}
+          PADFORGE_SIGNING_FINGERPRINT: 812A7B7DF5195EEA21E1F8C90CAA49C6DDFEEF4D
+        run: |
+          docker run --rm \
+            -e PADFORGE_TAG \
+            -e PADFORGE_SIGNING_KEY \
+            -e PADFORGE_SIGNING_PASSPHRASE \
+            -e PADFORGE_SIGNING_FINGERPRINT \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            archlinux:base-devel \
+            bash /workspace/packaging/arch/ci-build-repo.sh
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload repository site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+      - name: Deploy repository site
+        id: deployment
+        uses: actions/deploy-pages@v4

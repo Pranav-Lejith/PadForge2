@@ -21,6 +21,13 @@ PadForge uses a standard CMake install layout:
 
 ## Arch Linux
 
+End users can add the signed PadForge repository once using the
+[setup guide](https://pranav-lejith.github.io/PadForge2/), then install or update
+with `sudo pacman -Syu padforge`. The repository is public and requires no
+GitHub account.
+
+To build the package from source instead:
+
 ```sh
 cd packaging/arch
 makepkg -si

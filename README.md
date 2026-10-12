@@ -128,9 +128,39 @@ sudo apt install ./PadForge-amd64.deb
 ```
 
 These are public release assets; opening the [releases page](https://github.com/Pranav-Lejith/PadForge2/releases/latest)
-does not require signing in. Building from source is for contributors and
-requires the development dependencies below. End users can use the AppImage or
-`.deb` instead.
+does not require signing in. Arch users can use the signed pacman repository
+below. Building from source is for contributors and requires the development
+dependencies below.
+
+### Arch Linux
+
+Download the public repository key and configuration, then verify that the
+displayed fingerprint matches
+`812A 7B7D F519 5EEA 21E1 F8C9 0CAA 49C6 DDFE EF4D`:
+
+```bash
+curl -fLO https://pranav-lejith.github.io/PadForge2/padforge.gpg
+curl -fLO https://pranav-lejith.github.io/PadForge2/padforge.conf
+gpg --show-keys --with-fingerprint padforge.gpg
+```
+
+Trust the key and add the repository once:
+
+```bash
+sudo pacman-key --add padforge.gpg
+sudo pacman-key --lsign-key 812A7B7DF5195EEA21E1F8C90CAA49C6DDFEEF4D
+sudo install -Dm644 padforge.conf /etc/pacman.d/padforge.conf
+grep -qF 'Include = /etc/pacman.d/padforge.conf' /etc/pacman.conf || \
+  echo 'Include = /etc/pacman.d/padforge.conf' | sudo tee -a /etc/pacman.conf
+```
+
+Now install and update PadForge with pacman:
+
+```bash
+sudo pacman -Syu padforge
+```
+
+The repository is hosted publicly and does not require a GitHub account.
 
 ## Building from Source
 
@@ -160,7 +190,7 @@ sudo dnf install cmake ninja-build gcc-c++ python3 qt6-qtbase-devel qt6-qt5compa
 **Arch Linux:**
 
 ```bash
-sudo pacman -S cmake ninja gcc python qt6-base qt6-5compat lua
+sudo pacman -S cmake ninja gcc python qt6-base qt6-5compat lua54
 ```
 
 ### Build Steps
