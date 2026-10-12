@@ -153,6 +153,19 @@ After enabling the repository, Fedora will include PadForge in normal DNF
 updates. To remove it, run `sudo dnf remove padforge`; disable the COPR source
 with `sudo dnf copr disable amphibiar/padforge` if you no longer want it.
 
+#### Requesting inclusion in Fedora's official repositories
+
+The COPR repository is community-maintained and separate from Fedora's
+official package repositories. To propose PadForge for official inclusion, a
+maintainer must prepare public links to the RPM spec file and source RPM, then
+submit a **package review** request through
+[Fedora's Bugzilla review form](https://bugzilla.redhat.com/enter_bug.cgi?product=Fedora&format=extras-review).
+Include the package name (`padforge`), a short description, and both links.
+Follow the [Fedora packaging review guidelines](https://docs.fedoraproject.org/en-US/packaging-guidelines/ReviewGuidelines/)
+and respond to any reviewer feedback. First-time Fedora package maintainers
+also need a Fedora packager sponsor. New and active requests can be checked in
+the [Fedora package review tracker](https://fedoraproject.org/PackageReviewStatus/reviewable.html).
+
 ### Arch Linux
 
 Download the public repository key and configuration, then verify that the
