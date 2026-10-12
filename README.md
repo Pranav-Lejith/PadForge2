@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![PadForge Logo](docs/padforge.svg)
+![PadForge Logo](resources/icons/org.padforge.PadForge.svg)
 
 **A fast, native Linux text editor inspired by the Notepad++ workflow.**
 
