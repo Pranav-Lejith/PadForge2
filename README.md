@@ -35,6 +35,10 @@ with [Lexilla](https://www.scintilla.org/Lexilla.html) for syntax highlighting.
 - **Backup and crash recovery**: `.bak`-on-save, periodic snapshots of modified
   documents and restore after an unclean exit.
 - **Synchronized Scrolling** for the split view (side-by-side files).
+- **Compare Documents** in the split view with per-side change highlighting and
+  next/previous difference navigation (F7 / Shift+F7).
+- **Find All** over the current or all open documents, with results grouped in
+  the clickable **Search Results** dock.
 - **Macros**: record, save and replay editing sequences.
 - **Plugin runtime** for **Lua** scripts and **native** shared libraries through
   a small, stable C ABI, plus an interactive **Lua script console** (REPL).

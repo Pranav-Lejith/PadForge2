@@ -32,6 +32,8 @@ signals:
     void replaceAllRequested();
     void countRequested();
     void markAllRequested();
+    void findAllInCurrentRequested();
+    void findAllInOpenRequested();
 
 protected:
     void closeEvent(QCloseEvent* event) override;

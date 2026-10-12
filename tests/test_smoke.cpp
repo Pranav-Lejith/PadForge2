@@ -1,9 +1,11 @@
 #include "CharacterMapPanel.h"
+#include "Diff.h"
 #include "EditorWidget.h"
 #include "Encoding.h"
 #include "FunctionListPanel.h"
 #include "MainWindow.h"
 #include "SearchEngine.h"
+#include "SearchResultsPanel.h"
 #include "TextOps.h"
 
 #include <QClipboard>
@@ -36,6 +38,8 @@ private slots:
     void backupOnSaveWritesDotBak();
     void saveCopyAsLeavesDocumentUntouched();
     void setFirstVisibleLineScrolls();
+    void compareMarkersSetAndClear();
+    void searchResultsPanelBuildsGroups();
 };
 
 void SmokeTest::newDocumentHoldsText() {
@@ -312,6 +316,45 @@ void SmokeTest::setFirstVisibleLineScrolls() {
     QCOMPARE(editor.firstVisibleLine(), 10);
     editor.setFirstVisibleLine(0);
     QCOMPARE(editor.firstVisibleLine(), 0);
+}
+
+void SmokeTest::compareMarkersSetAndClear() {
+    const QString a = QStringLiteral("one\ntwo\nthree\nfour\nfive\n");
+    const QString b = QStringLiteral("one\nTWO\nthree\nfour\nFIVE\nsix\n");
+    EditorWidget editor;
+    editor.setDocumentText(a);
+    editor.setCompareMarkers(Diff::removedLines(a, b), Diff::addedLines(a, b));
+    QCOMPARE(editor.documentText(), a);
+    editor.clearCompareMarkers();
+    QCOMPARE(editor.documentText(), a);
+
+    // Out-of-range and edge lines must be harmless.
+    editor.setCompareMarkers({-1, 0, 1, 2, 99}, {3, 1000});
+    editor.clearCompareMarkers();
+    QCOMPARE(editor.documentText(), a);
+}
+
+void SmokeTest::searchResultsPanelBuildsGroups() {
+    EditorWidget one;
+    one.setDocumentText(QStringLiteral("foo here\nnothing\n"));
+    EditorWidget two;
+    two.setDocumentText(QStringLiteral("and foo\ntwo foo lines\n"));
+
+    SearchResultsPanel panel;
+    panel.begin(QStringLiteral("foo"));
+    panel.addHit(&one, 1, 1, QStringLiteral("foo here"));
+    panel.addHit(&two, 1, 5, QStringLiteral("and foo"));
+    panel.addHit(&two, 2, 5, QStringLiteral("two foo lines"));
+    panel.finish(3);
+
+    auto* tree = panel.findChild<QTreeWidget*>();
+    QVERIFY(tree != nullptr);
+    QCOMPARE(tree->topLevelItemCount(), 2);
+    QTreeWidgetItem* second = tree->topLevelItem(1);
+    QCOMPARE(second->childCount(), 2);
+    QCOMPARE(second->child(0)->text(1), QStringLiteral("1"));
+    QCOMPARE(second->child(0)->text(2), QStringLiteral("5"));
+    QCOMPARE(second->child(1)->data(0, Qt::UserRole + 1).toInt(), 2);
 }
 
 QTEST_MAIN(SmokeTest)

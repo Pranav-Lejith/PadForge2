@@ -79,6 +79,11 @@ public:
     static int lineCount(const QString& text);
     static int characterCount(const QString& text);
 
+    // Line addressing (all line numbers are 1-based).
+    static int lineNumberAt(const QString& text, int offset);
+    static int lineStartAt(const QString& text, int lineNumber);
+    static QString lineContent(const QString& text, int lineNumber);
+
     // Encoders / converters (MIME Tools / Converter style). Text is treated as
     // UTF-8 where an octet stream is required.
     static QString base64Encode(const QString& text);

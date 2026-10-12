@@ -32,6 +32,8 @@ PadForge follows the familiar Notepad++/desktop editor conventions.
 | `Ctrl+G` | Go to line |
 | `Ctrl+Space` | Word completion |
 | `Ctrl+Enter` | Function/symbol completion |
+| `F7` | Next difference (compare) |
+| `Shift+F7` | Previous difference (compare) |
 
 ## Search
 

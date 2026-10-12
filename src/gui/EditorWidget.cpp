@@ -40,6 +40,8 @@ constexpr int kLineNumberMargin = 0;
 
 constexpr int kSearchIndicator = 0;
 constexpr int kSmartIndicator = 1;
+constexpr int kCompareRemovedIndicator = 2;
+constexpr int kCompareAddedIndicator = 3;
 
 int sciColor(const QColor& c) {
     return c.red() | (c.green() << 8) | (c.blue() << 16);
@@ -290,6 +292,16 @@ void EditorWidget::applyTheme(const Theme& theme) {
                    sciColor(theme.dark ? QColor("#61afef") : QColor("#3399ff")));
     m_editor->send(SCI_INDICSETSTYLE, kSmartIndicator, INDIC_ROUNDBOX);
     m_editor->send(SCI_INDICSETFORE, kSmartIndicator, sciColor(QColor("#ffd24a")));
+
+    // Compare highlighting: translucent fill behind removed/added lines.
+    m_editor->send(SCI_INDICSETSTYLE, kCompareRemovedIndicator, INDIC_STRAIGHTBOX);
+    m_editor->send(SCI_INDICSETFORE, kCompareRemovedIndicator,
+                   sciColor(theme.dark ? QColor("#8b2d2d") : QColor("#ff8a80")));
+    m_editor->send(SCI_INDICSETALPHA, kCompareRemovedIndicator, 70);
+    m_editor->send(SCI_INDICSETSTYLE, kCompareAddedIndicator, INDIC_STRAIGHTBOX);
+    m_editor->send(SCI_INDICSETFORE, kCompareAddedIndicator,
+                   sciColor(theme.dark ? QColor("#2d5f2d") : QColor("#80ffa0")));
+    m_editor->send(SCI_INDICSETALPHA, kCompareAddedIndicator, 70);
 
     // Scintilla change-history indicators (36..43):
     // even numbers are insertions, odd numbers are deletions.
@@ -827,6 +839,35 @@ void EditorWidget::highlightMatches(const QString& term, const SearchOptions& op
 void EditorWidget::clearSearchIndicators() {
     m_editor->send(SCI_SETINDICATORCURRENT, kSearchIndicator);
     const int length = int(m_editor->send(SCI_GETLENGTH));
+    m_editor->send(SCI_INDICATORCLEARRANGE, 0, length);
+}
+
+namespace {
+void fillCompareLine(ScintillaEdit* editor, int oneBasedLine, int indicator) {
+    const int line = oneBasedLine - 1;
+    const sptr_t start = editor->send(SCI_POSITIONFROMLINE, uptr_t(line));
+    const sptr_t end = editor->send(SCI_POSITIONFROMLINE, uptr_t(line + 1));
+    const sptr_t length = int(editor->send(SCI_GETLENGTH));
+    if (start < 0 || end < start || start >= length)
+        return;
+    editor->send(SCI_SETINDICATORCURRENT, uptr_t(indicator));
+    editor->send(SCI_INDICATORFILLRANGE, uptr_t(start), sptr_t(end - start));
+}
+} // namespace
+
+void EditorWidget::setCompareMarkers(const QList<int>& removedLines, const QList<int>& addedLines) {
+    clearCompareMarkers();
+    for (int line : removedLines)
+        fillCompareLine(m_editor, line, kCompareRemovedIndicator);
+    for (int line : addedLines)
+        fillCompareLine(m_editor, line, kCompareAddedIndicator);
+}
+
+void EditorWidget::clearCompareMarkers() {
+    const int length = int(m_editor->send(SCI_GETLENGTH));
+    m_editor->send(SCI_SETINDICATORCURRENT, kCompareRemovedIndicator);
+    m_editor->send(SCI_INDICATORCLEARRANGE, 0, length);
+    m_editor->send(SCI_SETINDICATORCURRENT, kCompareAddedIndicator);
     m_editor->send(SCI_INDICATORCLEARRANGE, 0, length);
 }
 

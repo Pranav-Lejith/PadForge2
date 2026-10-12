@@ -3,7 +3,9 @@
 #include "Backup.h"
 #include "CharacterMapPanel.h"
 #include "ColumnEditorDialog.h"
+#include "CompareDocumentsDialog.h"
 #include "ConsolePanel.h"
+#include "Diff.h"
 #include "DocumentMap.h"
 #include "DocumentSummaryDialog.h"
 #include "EditorWidget.h"
@@ -18,6 +20,7 @@
 #include "PreferencesDialog.h"
 #include "RunDialog.h"
 #include "SearchEngine.h"
+#include "SearchResultsPanel.h"
 #include "TextOps.h"
 #include "Theme.h"
 
@@ -127,6 +130,10 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     connect(m_findDialog, &FindReplaceDialog::replaceAllRequested, this, &MainWindow::replaceAll);
     connect(m_findDialog, &FindReplaceDialog::countRequested, this, &MainWindow::countMatches);
     connect(m_findDialog, &FindReplaceDialog::markAllRequested, this, &MainWindow::markAll);
+    connect(m_findDialog, &FindReplaceDialog::findAllInCurrentRequested, this,
+            [this]() { findAllInOpen(false); });
+    connect(m_findDialog, &FindReplaceDialog::findAllInOpenRequested, this,
+            [this]() { findAllInOpen(true); });
 
     m_pluginHost = new PluginHost(this);
 
@@ -205,8 +212,7 @@ void MainWindow::registerEditor(EditorWidget* editor) {
         if (editor == currentEditor())
             updateStatus();
     });
-    connect(editor, &EditorWidget::scrolled, this,
-            [this, editor]() { syncScrollFrom(editor); });
+    connect(editor, &EditorWidget::scrolled, this, [this, editor]() { syncScrollFrom(editor); });
     connect(editor, &EditorWidget::languageChanged, this, [this, editor](const QString&) {
         if (editor == currentEditor())
             updateStatus();
@@ -274,6 +280,8 @@ void MainWindow::openPaths(const QStringList& paths) {
 void MainWindow::closeEditor(EditorWidget* editor) {
     if (!editor)
         return;
+    if (editor == m_compareA || editor == m_compareB)
+        clearCompare();
     auto* tabs = qobject_cast<QTabWidget*>(editor->parentWidget());
     if (editor->isModified()) {
         const QString name = editor->filePath().isEmpty()
@@ -679,6 +687,14 @@ void MainWindow::createMenus() {
     });
 
     editMenu->addSeparator();
+    QAction* aNextDiff = editMenu->addAction(tr("Next Difference"));
+    aNextDiff->setShortcut(QKeySequence(QStringLiteral("F7")));
+    connect(aNextDiff, &QAction::triggered, this, [this]() { gotoNextDifference(true); });
+    QAction* aPrevDiff = editMenu->addAction(tr("Previous Difference"));
+    aPrevDiff->setShortcut(QKeySequence(QStringLiteral("Shift+F7")));
+    connect(aPrevDiff, &QAction::triggered, this, [this]() { gotoNextDifference(false); });
+
+    editMenu->addSeparator();
     auto* commentMenu = editMenu->addMenu(tr("Co&mment/Uncomment"));
     QAction* aLineComment = commentMenu->addAction(tr("Toggle Line Comment"));
     aLineComment->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+C")));
@@ -882,6 +898,18 @@ void MainWindow::createMenus() {
     });
     connect(m_characterMapDock, &QDockWidget::visibilityChanged, aCharacterMap,
             &QAction::setChecked);
+    QAction* aSearchResults = viewMenu->addAction(tr("Search R&esults"));
+    aSearchResults->setCheckable(true);
+    connect(aSearchResults, &QAction::triggered, this, [this](bool checked) {
+        if (checked) {
+            m_searchResultsDock->show();
+            m_searchResultsDock->raise();
+        } else {
+            m_searchResultsDock->hide();
+        }
+    });
+    connect(m_searchResultsDock, &QDockWidget::visibilityChanged, aSearchResults,
+            &QAction::setChecked);
     viewMenu->addSeparator();
     QAction* aMoveView = viewMenu->addAction(tr("Move to Other View"));
     connect(aMoveView, &QAction::triggered, this, &MainWindow::moveToOtherView);
@@ -890,10 +918,10 @@ void MainWindow::createMenus() {
     orientationMenu->addAction(m_actSplitHorizontal);
     orientationMenu->addAction(m_actSplitVertical);
     viewMenu->addSeparator();
-    QAction* aSyncScroll = viewMenu->addAction(tr("Synchronized Scrolling"));
-    aSyncScroll->setCheckable(true);
-    aSyncScroll->setChecked(m_syncScroll);
-    connect(aSyncScroll, &QAction::toggled, this, [this](bool on) {
+    m_actSyncScroll = viewMenu->addAction(tr("Synchronized Scrolling"));
+    m_actSyncScroll->setCheckable(true);
+    m_actSyncScroll->setChecked(m_syncScroll);
+    connect(m_actSyncScroll, &QAction::toggled, this, [this](bool on) {
         m_syncScroll = on;
         m_settings.syncScroll = on;
         m_settings.save();
@@ -1056,6 +1084,12 @@ void MainWindow::createMenus() {
     }
 
     toolsMenu->addSeparator();
+    QAction* aCompare = toolsMenu->addAction(tr("&Compare Documents..."));
+    connect(aCompare, &QAction::triggered, this, &MainWindow::compareDocuments);
+    QAction* aClearCompare = toolsMenu->addAction(tr("&Clear Compare Highlight"));
+    connect(aClearCompare, &QAction::triggered, this, &MainWindow::clearCompare);
+
+    toolsMenu->addSeparator();
     QAction* aConsoleShow = toolsMenu->addAction(tr("Script &Console"));
     connect(aConsoleShow, &QAction::triggered, this, &MainWindow::showScriptConsole);
 
@@ -1180,6 +1214,15 @@ void MainWindow::createDocks() {
     m_characterMapDock->hide();
     connect(m_characterMap, &CharacterMapPanel::characterSelected, this,
             [this](const QString& text) { insertText(text); });
+
+    m_searchResultsPanel = new SearchResultsPanel(this);
+    m_searchResultsDock = new QDockWidget(tr("Search Results"), this);
+    m_searchResultsDock->setObjectName(QStringLiteral("searchResultsDock"));
+    m_searchResultsDock->setWidget(m_searchResultsPanel);
+    addDockWidget(Qt::RightDockWidgetArea, m_searchResultsDock);
+    m_searchResultsDock->hide();
+    connect(m_searchResultsPanel, &SearchResultsPanel::resultActivated, this,
+            &MainWindow::goToSearchResult);
 }
 
 void MainWindow::createPluginMenu() {
@@ -1323,6 +1366,51 @@ void MainWindow::countMatches() {
 void MainWindow::markAll() {
     if (EditorWidget* editor = currentEditor())
         editor->highlightMatches(m_findDialog->term(), m_findDialog->options());
+}
+
+void MainWindow::findAllInOpen(bool allDocuments) {
+    EditorWidget* current = currentEditor();
+    if (!current)
+        return;
+    const QString term = m_findDialog->term();
+    if (term.isEmpty()) {
+        showMessage(tr("Nothing to search for."));
+        return;
+    }
+    const SearchOptions options = m_findDialog->options();
+    m_searchResultsPanel->begin(term);
+    int total = 0;
+    const QList<EditorWidget*> targets = allDocuments ? m_editors : QList<EditorWidget*>({current});
+    for (EditorWidget* editor : targets) {
+        if (!editor || editor->isLargeFile())
+            continue;
+        const QString text = editor->documentText();
+        const QList<SearchMatch> matches = SearchEngine::findAll(text, term, options, 100000);
+        for (const SearchMatch& match : matches) {
+            const int line = TextOps::lineNumberAt(text, int(match.start));
+            const int column = int(match.start) - TextOps::lineStartAt(text, line) + 1;
+            m_searchResultsPanel->addHit(editor, line, column,
+                                         TextOps::lineContent(text, line).trimmed());
+        }
+        total += matches.size();
+    }
+    m_searchResultsPanel->finish(total);
+    m_searchResultsDock->show();
+    m_searchResultsDock->raise();
+    showMessage(total > 0 ? tr("%1 match(es) found in open document(s).").arg(total)
+                          : tr("No matches found."));
+}
+
+void MainWindow::goToSearchResult(EditorWidget* editor, int line) {
+    if (!editor)
+        return;
+    auto* tabs = qobject_cast<QTabWidget*>(editor->parentWidget());
+    if (tabs) {
+        tabs->setCurrentWidget(editor);
+        m_activeTabs = tabs;
+    }
+    editor->gotoLine(line);
+    editor->setFocus();
 }
 
 void MainWindow::gotoResult(const QString& file, int line) {
@@ -1624,6 +1712,129 @@ void MainWindow::syncScrollFrom(EditorWidget* source) {
     m_syncingScroll = true;
     other->setFirstVisibleLine(line);
     m_syncingScroll = false;
+}
+
+void MainWindow::ensureSplitView() {
+    if (!m_subTabs->isVisible()) {
+        m_subTabs->setVisible(true);
+        m_actSplitView->setChecked(true);
+    }
+}
+
+void MainWindow::moveEditorTo(EditorWidget* editor, QTabWidget* view) {
+    auto* from = qobject_cast<QTabWidget*>(editor->parentWidget());
+    if (from == view) {
+        view->setCurrentWidget(editor);
+        m_activeTabs = view;
+        return;
+    }
+    if (from)
+        from->removeTab(from->indexOf(editor));
+    view->addTab(editor, tr("Untitled"));
+    view->setCurrentWidget(editor);
+    m_activeTabs = view;
+    updateTabTitle(editor);
+}
+
+void MainWindow::compareDocuments() {
+    if (m_editors.size() < 2) {
+        showMessage(tr("Compare needs at least two open documents."));
+        return;
+    }
+    CompareDocumentsDialog dialog(m_editors, currentEditor(), this);
+    if (dialog.exec() != QDialog::Accepted)
+        return;
+    startCompare(dialog.firstDocument(), dialog.secondDocument());
+}
+
+void MainWindow::startCompare(EditorWidget* first, EditorWidget* second) {
+    if (!first || !second || first == second)
+        return;
+    clearCompare();
+    ensureSplitView();
+    moveEditorTo(first, m_mainTabs);
+    moveEditorTo(second, m_subTabs);
+
+    const QList<int> removed = Diff::removedLines(first->documentText(), second->documentText());
+    const QList<int> added = Diff::addedLines(first->documentText(), second->documentText());
+    first->setCompareMarkers(removed, {});
+    second->setCompareMarkers({}, added);
+
+    m_compareA = first;
+    m_compareB = second;
+    m_compareLinesA = removed;
+    m_compareLinesB = added;
+    m_compareActive = true;
+
+    m_syncScrollBeforeCompare = m_syncScroll;
+    if (!m_syncScroll) {
+        m_syncScroll = true;
+        if (m_actSyncScroll) {
+            const QSignalBlocker blocker(m_actSyncScroll);
+            m_actSyncScroll->setChecked(true);
+        }
+    }
+    showMessage(
+        tr("Compare: %1 lines added, %2 lines removed.").arg(added.size()).arg(removed.size()));
+}
+
+void MainWindow::clearCompare() {
+    if (m_compareA)
+        m_compareA->clearCompareMarkers();
+    if (m_compareB)
+        m_compareB->clearCompareMarkers();
+    if (m_compareActive && m_syncScroll != m_syncScrollBeforeCompare) {
+        m_syncScroll = m_syncScrollBeforeCompare;
+        if (m_actSyncScroll) {
+            const QSignalBlocker blocker(m_actSyncScroll);
+            m_actSyncScroll->setChecked(m_syncScroll);
+        }
+    }
+    m_compareA = nullptr;
+    m_compareB = nullptr;
+    m_compareLinesA.clear();
+    m_compareLinesB.clear();
+    m_compareActive = false;
+}
+
+void MainWindow::gotoNextDifference(bool forward) {
+    if (!m_compareActive)
+        return;
+    EditorWidget* editor = currentEditor();
+    if (!editor)
+        return;
+    const QList<int>* lines = nullptr;
+    if (editor == m_compareA)
+        lines = &m_compareLinesA;
+    else if (editor == m_compareB)
+        lines = &m_compareLinesB;
+    if (!lines || lines->isEmpty())
+        return;
+    const int caret = editor->currentLine();
+    int best = -1;
+    if (forward) {
+        for (int line : *lines) {
+            if (line > caret) {
+                best = line;
+                break;
+            }
+        }
+        if (best < 0)
+            best = lines->first();
+    } else {
+        for (qsizetype i = lines->size() - 1; i >= 0; --i) {
+            if (lines->at(i) < caret) {
+                best = lines->at(i);
+                break;
+            }
+        }
+        if (best < 0)
+            best = lines->last();
+    }
+    if (best > 0) {
+        editor->gotoLine(best);
+        editor->setFocus();
+    }
 }
 
 void MainWindow::snapshotModifiedDocuments() {

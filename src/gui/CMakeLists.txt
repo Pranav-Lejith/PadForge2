@@ -30,7 +30,11 @@ add_library(padforge_gui STATIC
     FunctionListPanel.cpp
     FunctionListPanel.h
     CharacterMapPanel.cpp
-    CharacterMapPanel.h)
+    CharacterMapPanel.h
+    CompareDocumentsDialog.cpp
+    CompareDocumentsDialog.h
+    SearchResultsPanel.cpp
+    SearchResultsPanel.h)
 
 target_include_directories(padforge_gui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 target_link_libraries(padforge_gui PUBLIC padforge_core PadForge::scintilla PadForge::lexilla

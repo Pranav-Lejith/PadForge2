@@ -517,6 +517,43 @@ int TextOps::characterCount(const QString& text) {
     return text.size();
 }
 
+int TextOps::lineNumberAt(const QString& text, int offset) {
+    offset = qBound(0, offset, text.size());
+    int line = 1;
+    for (int i = 0; i < offset; ++i) {
+        if (text.at(i) == QLatin1Char('\n'))
+            ++line;
+    }
+    return line;
+}
+
+int TextOps::lineStartAt(const QString& text, int lineNumber) {
+    if (lineNumber <= 1)
+        return 0;
+    int line = 1;
+    for (int i = 0; i < text.size(); ++i) {
+        if (text.at(i) == QLatin1Char('\n')) {
+            ++line;
+            if (line == lineNumber)
+                return i + 1;
+        }
+    }
+    return text.size();
+}
+
+QString TextOps::lineContent(const QString& text, int lineNumber) {
+    if (lineNumber < 1 || lineNumber > lineCount(text))
+        return QString();
+    const int start = lineStartAt(text, lineNumber);
+    int end = start;
+    while (end < text.size() && text.at(end) != QLatin1Char('\n'))
+        ++end;
+    QString content = text.mid(start, end - start);
+    if (content.endsWith(QLatin1Char('\r')))
+        content.chop(1);
+    return content;
+}
+
 QString TextOps::base64Encode(const QString& text) {
     return QString::fromLatin1(text.toUtf8().toBase64());
 }

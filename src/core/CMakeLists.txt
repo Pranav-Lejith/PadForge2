@@ -1,5 +1,6 @@
 add_library(padforge_core STATIC
     Backup.cpp
+    Diff.cpp
     Encoding.cpp
     LanguageManager.cpp
     Macro.cpp

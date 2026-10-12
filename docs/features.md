@@ -65,6 +65,9 @@ being a port of its code.
 - Count matches and mark all matches in the document.
 - **Find in Files** across a directory tree with name filters and clickable
   results.
+- **Find All** in the current document or in all open documents from the Find
+  dialog: matches open in the **Search Results** dock, grouped per document with
+  click-to-jump.
 
 ## Export and printing
 
@@ -139,6 +142,14 @@ being a port of its code.
 - Split **orientation** (horizontal or vertical) for the second tab group.
 - **Synchronized Scrolling** (View menu): keeps the top visible line of both tab
   groups in lockstep for side-by-side diffing (Views side by side recommended).
+- **Compare Documents...** (Tools menu, F7/Shift+F7 to jump between changes):
+  opens two documents side by side in the split view, highlights the changed
+  lines on each side (removed in one, added in the other), turns on synchronized
+  scrolling, and summarizes the change counts in the status bar. Clearing the
+  compare restores your scroll-sync preference. Flat files and documents with no
+  shared prefix are diffed line-wise via the `Diff` core module.
+- **Search Results** dock (View > Search Results): results from Find All group
+  per document with line/column columns; double-click a row to jump there.
 - **Full screen** (F11) and **always on top**.
 - **Run...** (F5) executes a shell command, expanding `$(FULL_CURRENT_PATH)` /
   `$(CURRENT_DIRECTORY)` / `$(CURRENT_FILENAME)` style variables, and shows

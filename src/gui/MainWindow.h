@@ -34,6 +34,7 @@ class FloatingWindow;
 class ConsolePanel;
 class FunctionListPanel;
 class CharacterMapPanel;
+class SearchResultsPanel;
 
 class MainWindow : public QMainWindow, public PluginContext {
     Q_OBJECT
@@ -96,6 +97,8 @@ private:
 
     // Search
     void showFindDialog();
+    void findAllInOpen(bool currentOnly);
+    void goToSearchResult(EditorWidget* editor, int line);
     void findNext(bool up);
     void replaceOne();
     void replaceAll();
@@ -132,6 +135,14 @@ private:
     // Split-view synchronized scrolling
     void syncScrollFrom(EditorWidget* source);
     EditorWidget* otherViewEditor(EditorWidget* editor) const;
+
+    // Compare documents
+    void compareDocuments();
+    void startCompare(EditorWidget* first, EditorWidget* second);
+    void clearCompare();
+    void gotoNextDifference(bool forward);
+    void moveEditorTo(EditorWidget* editor, QTabWidget* view);
+    void ensureSplitView();
 
     // Backup and crash recovery
     void snapshotModifiedDocuments();
@@ -191,9 +202,20 @@ private:
     QLabel* m_statusLanguage = nullptr;
     QLabel* m_statusReadOnly = nullptr;
 
+    SearchResultsPanel* m_searchResultsPanel = nullptr;
+    QDockWidget* m_searchResultsDock = nullptr;
+
     QTimer m_backupTimer;
     bool m_syncScroll = false;
     bool m_syncingScroll = false;
+    QAction* m_actSyncScroll = nullptr;
+
+    EditorWidget* m_compareA = nullptr;
+    EditorWidget* m_compareB = nullptr;
+    QList<int> m_compareLinesA;
+    QList<int> m_compareLinesB;
+    bool m_compareActive = false;
+    bool m_syncScrollBeforeCompare = false;
 
     QMenu* m_recentMenu = nullptr;
     QMenu* m_languageMenu = nullptr;

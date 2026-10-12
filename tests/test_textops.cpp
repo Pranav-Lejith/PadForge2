@@ -21,6 +21,7 @@ private slots:
     void duplicateMoveJoinSplit();
     void columnInsert();
     void statistics();
+    void lineAddressing();
     void base64RoundTrip();
     void urlEncoding();
     void htmlEntities();
@@ -132,6 +133,26 @@ void TextOpsTest::statistics() {
     QCOMPARE(TextOps::wordCount(text), 4);
     QCOMPARE(TextOps::lineCount(text), 2);
     QCOMPARE(TextOps::characterCount(text), text.size());
+}
+
+void TextOpsTest::lineAddressing() {
+    const QString text = QStringLiteral("alpha\nbeta\ngamma\ndelta");
+    QCOMPARE(TextOps::lineNumberAt(text, 0), 1); // 'a'
+    QCOMPARE(TextOps::lineNumberAt(text, 5), 1); // before first \n
+    QCOMPARE(TextOps::lineNumberAt(text, 6), 2); // 'b'
+    QCOMPARE(TextOps::lineNumberAt(text, text.size() - 1), 4);
+    QCOMPARE(TextOps::lineNumberAt(text, text.size()), 4); // clamped
+
+    QCOMPARE(TextOps::lineStartAt(text, 1), 0);
+    QCOMPARE(TextOps::lineStartAt(text, 2), 6);
+    QCOMPARE(TextOps::lineStartAt(text, 4), 17);
+    QCOMPARE(TextOps::lineStartAt(text, 99), text.size());
+
+    QCOMPARE(TextOps::lineContent(text, 1), QStringLiteral("alpha"));
+    QCOMPARE(TextOps::lineContent(text, 3), QStringLiteral("gamma"));
+    QCOMPARE(TextOps::lineContent(text, 4), QStringLiteral("delta"));
+    QCOMPARE(TextOps::lineContent(QStringLiteral("crlf\r\nnext"), 1), QStringLiteral("crlf"));
+    QCOMPARE(TextOps::lineContent(text, 99), QString());
 }
 
 void TextOpsTest::base64RoundTrip() {

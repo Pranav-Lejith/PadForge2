@@ -103,6 +103,8 @@ public:
 
     void highlightMatches(const QString& term, const SearchOptions& options);
     void clearSearchIndicators();
+    void setCompareMarkers(const QList<int>& removedLines, const QList<int>& addedLines);
+    void clearCompareMarkers();
 
     void applySavedState(int cursor, int anchor, int firstVisibleLine, const QList<int>& bookmarks);
 

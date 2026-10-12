@@ -86,6 +86,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   without touching the document's path or save state (`saveCopyAs`).
 - `test_backup` unit suite and smoke tests for `.bak`-on-save, save-copy and
   top-line scrolling (14 smoke tests).
+- **Compare Documents...** (Tools menu): opens two documents side by side in the
+  split view, marks changed lines (removed/added) with per-side highlight
+  indicators via a new `Diff` core module, enables synchronized scrolling for
+  the comparison and reports change counts in the status bar (`next/previous
+  difference`: F7 / Shift+F7, `Clear Compare Highlight`).
+- **Find All in Current** / **Find All in Open Documents** in the Find dialog
+  with results grouped per document in the new **Search Results** dock
+  (`SearchResultsPanel`), click-to-jump included (View menu toggle).
+- `TextOps` line-address helpers (`lineNumberAt`, `lineStartAt`, `lineContent`)
+  powering the results panel columns.
+- `test_diff` unit suite (LCS-based line diff with reconstruction round-trips),
+  `test_textops` line-address tests and smoke tests for compare markers and the
+  results panel (16 smoke tests).
 
 ## [0.1.0] - 2026-10-11
 

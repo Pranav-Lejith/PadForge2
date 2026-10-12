@@ -48,6 +48,8 @@ FindReplaceDialog::FindReplaceDialog(QWidget* parent)
     auto* findPrev = new QPushButton(tr("Find Previous"), this);
     auto* countBtn = new QPushButton(tr("Count"), this);
     auto* markBtn = new QPushButton(tr("Mark All"), this);
+    auto* findAllBtn = new QPushButton(tr("Find All in Current"), this);
+    auto* findAllOpenBtn = new QPushButton(tr("Find All in Open Documents"), this);
     auto* replaceBtn = new QPushButton(tr("Replace"), this);
     auto* replaceAllBtn = new QPushButton(tr("Replace All"), this);
 
@@ -61,6 +63,8 @@ FindReplaceDialog::FindReplaceDialog(QWidget* parent)
     buttonRow->addWidget(findPrev);
     buttonRow->addWidget(countBtn);
     buttonRow->addWidget(markBtn);
+    buttonRow->addWidget(findAllBtn);
+    buttonRow->addWidget(findAllOpenBtn);
     buttonRow->addStretch();
     buttonRow->addWidget(replaceBtn);
     buttonRow->addWidget(replaceAllBtn);
@@ -77,6 +81,8 @@ FindReplaceDialog::FindReplaceDialog(QWidget* parent)
     connect(findPrev, &QPushButton::clicked, this, &FindReplaceDialog::findPreviousRequested);
     connect(countBtn, &QPushButton::clicked, this, &FindReplaceDialog::countRequested);
     connect(markBtn, &QPushButton::clicked, this, &FindReplaceDialog::markAllRequested);
+    connect(findAllBtn, &QPushButton::clicked, this, &FindReplaceDialog::findAllInCurrentRequested);
+    connect(findAllOpenBtn, &QPushButton::clicked, this, &FindReplaceDialog::findAllInOpenRequested);
     connect(replaceBtn, &QPushButton::clicked, this, &FindReplaceDialog::replaceRequested);
     connect(replaceAllBtn, &QPushButton::clicked, this, &FindReplaceDialog::replaceAllRequested);
     connect(m_findEdit, &QLineEdit::returnPressed, this, &FindReplaceDialog::findNextRequested);

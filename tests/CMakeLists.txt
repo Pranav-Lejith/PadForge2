@@ -15,6 +15,7 @@ padforge_add_test(test_macro)
 padforge_add_test(test_textops)
 padforge_add_test(test_outline)
 padforge_add_test(test_backup)
+padforge_add_test(test_diff)
 
 if(PADFORGE_ENABLE_LUA)
     padforge_add_test(test_plugin)
