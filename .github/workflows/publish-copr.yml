@@ -1,0 +1,41 @@
+name: Publish Fedora package to COPR
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      copr_project:
+        description: COPR project in owner/project format
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  submit-copr-build:
+    name: Build and submit Fedora SRPM
+    runs-on: ubuntu-latest
+    container: fedora:44
+    steps:
+      - name: Install RPM and COPR build tools
+        run: dnf --disablerepo=fedora-cisco-openh264 install -y rpm-build cmake ninja-build gcc-c++ python3 qt6-qtbase-devel qt6-qt5compat-devel lua-devel desktop-file-utils git curl gzip copr-cli
+
+      - uses: actions/checkout@v4
+
+      - name: Build and test RPM/SRPM
+        run: packaging/rpm/build-rpm.sh
+
+      - name: Submit SRPM to COPR
+        env:
+          COPR_CONFIG: ${{ secrets.COPR_CONFIG }}
+          COPR_PROJECT: ${{ inputs.copr_project || vars.COPR_PROJECT }}
+        run: |
+          test -n "$COPR_CONFIG" || { echo 'Configure the COPR_CONFIG repository secret first.' >&2; exit 1; }
+          test -n "$COPR_PROJECT" || { echo 'Provide a COPR project in owner/project format.' >&2; exit 1; }
+          install -d -m 700 "$HOME/.config"
+          printf '%s\n' "$COPR_CONFIG" > "$HOME/.config/copr"
+          chmod 600 "$HOME/.config/copr"
+          copr-cli build --nowait "$COPR_PROJECT" dist/padforge-*.src.rpm
