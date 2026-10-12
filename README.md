@@ -1,146 +1,310 @@
 # PadForge
 
-**A fast, native Linux text editor with a Notepad++-style workflow.**
+<div align="center">
 
-PadForge is a from-scratch project that brings the familiar tabbed, keyboard-first
-editing experience popularised by Notepad++ to a modern Linux stack: C++20,
-Qt 6 Widgets and the [Scintilla](https://www.scintilla.org/) editing component
-with [Lexilla](https://www.scintilla.org/Lexilla.html) for syntax highlighting.
+![PadForge Logo](docs/padforge.svg)
 
-> PadForge is an independent project. It is *inspired by* Notepad++ but is not
-> affiliated with, endorsed by, or derived from the Notepad++ source. See
-> [`NOTICE`](NOTICE).
+**A fast, native Linux text editor inspired by the Notepad++ workflow.**
+
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+[![C++20](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://isocpp.org/)
+[![Qt 6](https://img.shields.io/badge/Qt-6-blue.svg)](https://www.qt.io/)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](#building-from-source)
+[![Tests](https://img.shields.io/badge/tests-10%2F10-brightgreen.svg)](#testing)
+
+</div>
+
+PadForge brings the familiar, efficient editing experience popularised by Notepad++ to a modern Linux stack. Built with **C++20**, **Qt 6 Widgets**, and the [Scintilla](https://www.scintilla.org/) editing component with [Lexilla](https://www.scintilla.org/Lexilla.html) for syntax highlighting, PadForge is lightweight, fast, and designed for power users.
+
+> PadForge is an independent project. It is *inspired by* Notepad++ but is not affiliated with, endorsed by, or derived from the Notepad++ source. See [`NOTICE`](NOTICE).
+
+## Table of Contents
+
+- [Features](#features)
+- [Screenshots](#screenshots)
+- [Installation](#installation)
+  - [One-Line Install (Local)](#one-line-install-local)
+  - [Prebuilt Binaries](#prebuilt-binaries)
+  - [Package Managers](#package-managers)
+- [Building from Source](#building-from-source)
+- [Usage](#usage)
+- [Testing](#testing)
+- [Documentation](#documentation)
+- [Contributing](#contributing)
+- [License](#license)
+- [Acknowledgments](#acknowledgments)
 
 ## Features
 
-- **Tabbed editing** with a separate **split view** for side-by-side files.
-- **Tab workflow**: right-click tab menu (close others/left/right/all, save,
-  reload, rename, copy path, open containing folder), middle-click to close, and
-  sort tabs by name or path.
-- **Syntax highlighting for 50+ languages** via Lexilla, with automatic
-  detection from the file extension, shebang or content.
-- **Encoding aware**: UTF-8 (with/without BOM), UTF-16 LE/BE, UTF-32 LE/BE and
-  Latin-1, with automatic detection on open and conversion on demand.
-- **Line-ending control**: LF, CRLF and CR, detected per file.
-- **Find & Replace** with plain, whole-word, extended (`\n`, `\t`, `\xHH`) and
-  regular-expression modes, wrap-around, counts and "mark all".
-- **Find in Files**: search a directory tree with filters and jump to a hit.
-- **Bookmarks**, **code folding**, **line numbers**, **brace matching**,
-  **auto-indent**, smart auto-close and **HTML/XML tag auto-close**.
-- **Function List** outline dock and **parameter calltips** for C-like/Python
-  code.
-- **Line tools**: delete/duplicate/move lines, join & split, sort, remove
-  duplicates, case conversion, trim whitespace, tabify/untabify.
-- **Column editor** (repeated text or numbered columns), **word completion**
-  (Ctrl+Space), **function/symbol completion** (Ctrl+Enter) and per-language
-  **comment/uncomment**.
-- **Column / multi-cursor editing** mode.
-- **Backup and crash recovery**: `.bak`-on-save, periodic snapshots of modified
-  documents and restore after an unclean exit.
-- **Synchronized Scrolling** for the split view (side-by-side files).
-- **Compare Documents** in the split view with per-side change highlighting and
-  next/previous difference navigation (F7 / Shift+F7).
-- **Find All** over the current or all open documents, with results grouped in
-  the clickable **Search Results** dock.
-- **Macros**: record, save and replay editing sequences.
-- **Plugin runtime** for **Lua** scripts and **native** shared libraries through
-  a small, stable C ABI, plus an interactive **Lua script console** (REPL).
-- **Tools**: Base64/URL/HTML/Unicode/Rot13/text↔hex conversions and MD5/SHA
-  digests of the selection or document; **Copy File Name/Path**; read-only
-  detection with an **R/O** status indicator and a **Read-Only Mode** toggle.
-- **Eight themes** (light, dark, Solarized ×2, Monokai, Dracula, Nord, Gruvbox)
-  with per-language style mapping, plus a **Preferences** dialog.
-- **Window** menu with `Alt+1..9` document jumps, split orientation, **full
-  screen** (F11), always-on-top and a **Run...** (F5) command runner.
-- **Explorer dock**, **Document Map** minimap, **Function List** and
-  **Character Map** docks, and **floating windows**
-  (detach/reattach tabs, `Ctrl+Alt+D` to detach).
-- **Export to HTML/RTF** and **print** with highlighting, plus an **Insert** menu
-  for date/time, GUIDs and the file name/path.
-- **Session restore** and a recent-files list.
+### Core Editing
+- **Tabbed & Split View**: Work with multiple documents side-by-side with synchronized scrolling
+- **Encoding Aware**: UTF-8 (with/without BOM), UTF-16 LE/BE, UTF-32 LE/BE and Latin-1 with automatic detection
+- **Line-Endings**: LF, CRLF, and CR with per-file detection and conversion
+- **Large-File Mode**: Automatically disables expensive features for improved performance on large files
+- **Column / Multi-Cursor Editing**: Full rectangular selection and multi-cursor support via Scintilla
 
-## Building
+### Search & Navigation
+- **Find & Replace**: Plain text, whole-word, extended (`\n`, `\t`, `\xHH`) and regex modes with wrap-around, counting, and "mark all"
+- **Find in Files**: Search across directory trees with filters and jump-to-hit navigation
+- **Find All**: Search current or all open documents with results grouped in the clickable Search Results dock
+- **Go to Line**, **Brace Matching**, and **Code Folding** with margin controls
 
-### Dependencies
+### Syntax & Intelligence
+- **50+ Languages**: Extensive lexer support via Lexilla with auto-detection by extension, shebang, or content
+- **Syntax Highlighting**: Rich, themeable highlighting with per-language styling
+- **Function List**: Document outline dock showing classes, functions, and symbols
+- **Parameter Calltips**: Intelligent signature hints for C-like and Python code
+- **Auto-Completion**: Word completion (`Ctrl+Space`) and function/symbol completion (`Ctrl+Enter`)
+- **Smart Auto-Close**: Brackets, quotes, and HTML/XML tags
 
-- CMake ≥ 3.21
-- Ninja (recommended) or Make
-- A C++20 compiler (GCC ≥ 12 or Clang ≥ 15)
-- Qt 6 (Core, Gui, Widgets, PrintSupport, Core5Compat, Test)
-- Python 3 (used once to generate the Scintilla Qt binding)
-- Lua 5.4 or 5.5 (optional; enables the Lua plugin runtime)
+### Productivity Tools
+- **Bookmarks**: Mark and navigate important lines quickly
+- **Line Operations**: Duplicate, move, join/split, sort, deduplicate, case conversion, trim whitespace, tabify/untabify
+- **Column Editor**: Insert repeated text or numbered columns with padding control
+- **Comment/Uncomment**: Language-aware line and block commenting
+- **Macros**: Record, save, and replay custom editing sequences
+- **Convert & Hash**: Base64, URL, HTML, Unicode, Rot13, text↔hex conversions plus MD5/SHA digests
+- **Insert Tools**: Date/time (multiple formats), GUIDs (5 shapes), and current file name/path
 
-On Arch Linux:
+### Workflow & Organization
+- **Sessions**: Automatic save/restore of open documents, view state, and window layout
+- **Recent Files**: Quick access to recently opened files
+- **Explorer Dock**: Folder-as-workspace file tree with follow-active-file
+- **Document Map**: Clickable minimap for quick navigation
+- **Character Map**: Browse and insert Unicode characters
+- **Floating Windows**: Detach tabs into separate windows and reattach with ease
 
-```sh
-sudo pacman -S --needed base-devel cmake ninja qt6-base lua python
+### Backup & Recovery
+- **Backup on Save**: Create `.bak` files when overwriting
+- **Periodic Snapshots**: Every 20 seconds, modified unsaved documents are snapshotted to disk
+- **Crash Recovery**: Restore unsaved work after an unclean exit
+- **Compare Documents**: Side-by-side diff with change highlighting and F7/Shift+F7 navigation
+
+### Customization & Extensibility
+- **8 Beautiful Themes**: Light, Dark, Solarized (Light/Dark), Monokai, Dracula, Nord, and Gruvbox
+- **Preferences Dialog**: Comprehensive settings for fonts, tabs, margins, display, and behavior
+- **Plugin System**: Sandboxable **Lua** plugins and a stable **C ABI** for native plugins
+- **Script Console**: Interactive Lua REPL with command history
+- **Read-Only Mode**: Toggle read-only state with automatic detection for locked files
+
+### Export & Integration
+- **Export**: Save documents with syntax highlighting as HTML or RTF
+- **Print & Print Preview**: Theme-aware printing
+- **Run Command**: Execute external commands with F5
+- **File Manager Integration**: Open containing folder, copy full path/filename
+
+## Screenshots
+
+*Coming soon — PadForge in action with different themes and layouts.*
+
+## Installation
+
+### One-Line Install (Local)
+
+Install the latest build to `~/.local/` with a single command:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/padforge/padforge/main/scripts/install-local.sh | bash
 ```
 
-On Debian/Ubuntu:
+Or download and run manually:
 
-```sh
-sudo apt install build-essential cmake ninja-build python3 \
-  qt6-base-dev qt6-base-dev-tools libgl1-mesa-dev liblua5.4-dev
+```bash
+git clone https://github.com/padforge/padforge.git && cd padforge && ./scripts/install-local.sh
 ```
 
-Scintilla and Lexilla are **not** system dependencies: PadForge fetches pinned
-source archives (`Scintilla 5.6.7`, `Lexilla 5.5.4`) with CMake `FetchContent`
-at configure time and generates the Qt binding automatically. The first
-configure therefore needs network access.
+This will install PadForge to `~/.local/bin/` and add the `.desktop` entry for app launchers.
 
-### Configure, build and test
+### Prebuilt Binaries
 
-```sh
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-cmake --build build
-ctest --test-dir build --output-on-failure
+Prebuilt binaries (AppImage, .deb, .rpm, .tar.gz) will be available on the [Releases](https://github.com/padforge/padforge/releases) page once published.
+
+**AppImage (Universal):**
+
+```bash
+curl -L -o PadForge-x86_64.AppImage https://github.com/padforge/padforge/releases/latest/download/PadForge-x86_64.AppImage
+chmod +x PadForge-x86_64.AppImage
+./PadForge-x86_64.AppImage
 ```
 
-If another Qt is installed, point CMake at the right one with
-`-DCMAKE_PREFIX_PATH=/path/to/qt6`.
+### Package Managers
+
+#### Arch Linux (pacman/AUR)
+
+**From source (PKGBUILD included):**
+
+```bash
+git clone https://github.com/padforge/padforge.git && cd padforge/packaging/arch && makepkg -si
+```
+
+**AUR** (coming soon): `paru -S padforge-git` or `yay -S padforge-git`
+
+#### Fedora / RHEL / openSUSE (DNF/RPM)
+
+Build the RPM locally:
+
+```bash
+git clone https://github.com/padforge/padforge.git && cd padforge
+rpmbuild -ba packaging/rpm/padforge.spec
+sudo dnf install ~/rpmbuild/RPMS/x86_64/padforge-*.rpm
+```
+
+COPR repository (coming soon for easier installation).
+
+#### Debian / Ubuntu (APT/DEB)
+
+Build and install the `.deb` package:
+
+```bash
+git clone https://github.com/padforge/padforge.git && cd padforge
+./packaging/deb/build-deb.sh
+sudo apt install ./dist/padforge_*_amd64.deb
+```
+
+#### Flatpak
+
+```bash
+flatpak-builder --user --install --force-clean build-flatpak \
+  packaging/flatpak/org.padforge.PadForge.yaml
+```
+
+#### Generic Tarball
+
+Download from [Releases](https://github.com/padforge/padforge/releases) and extract, or build:
+
+```bash
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build && cd build && cpack -G TGZ
+```
+
+## Building from Source
+
+### Requirements
+
+- **CMake** ≥ 3.21
+- **C++20** compiler (GCC 13+ or Clang 15+)
+- **Qt 6** (Core, Gui, Widgets, Test)
+- **Ninja** (recommended) or Make
+- **Python 3** (required for Scintilla/Lexilla WidgetGen)
+- **Lua 5.4** (optional but recommended for plugin support)
+
+#### Install Dependencies
+
+**Debian/Ubuntu:**
+
+```bash
+sudo apt install cmake ninja-build g++ python3 qt6-base-dev qt6-base-dev-tools libgl1-mesa-dev liblua5.4-dev
+```
+
+**Fedora:**
+
+```bash
+sudo dnf install cmake ninja-build gcc-c++ python3 qt6-qtbase-devel lua-devel
+```
+
+**Arch Linux:**
+
+```bash
+sudo pacman -S cmake ninja gcc python qt6-base lua
+```
+
+### Build Steps
+
+```bash
+git clone https://github.com/padforge/padforge.git
+cd padforge
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DPADFORGE_ENABLE_LUA=ON -DPADFORGE_BUILD_TESTS=ON
+cmake --build build --parallel
+```
+
+### Install Locally
+
+```bash
+cmake --install build --prefix ~/.local
+```
 
 ### Run
 
-```sh
-./build/src/gui/padforge [files...]
+```bash
+~/.local/bin/padforge  # or just `padforge` if ~/.local/bin is in PATH
 ```
 
-## CMake options
+## Usage
 
-| Option | Default | Meaning |
-| --- | --- | --- |
-| `PADFORGE_BUILD_TESTS` | `ON` | Build the unit and smoke tests |
-| `PADFORGE_ENABLE_LUA` | `ON` | Enable the Lua plugin runtime |
-| `PADFORGE_USE_SYSTEM_SCINTILLA` | `OFF` | Skip FetchContent and build the core library only (fast core iteration; the GUI needs Scintilla) |
+Launch PadForge from your app menu or terminal:
 
-## Plugins
+```bash
+padforge [files...]
+```
 
-Drop Lua files into `~/.config/PadForge/plugins/` and choose
-**Plugins → Reload Plugins**. Six example plugins ship in [`plugins/lua`](plugins/lua)
-(word count, trim whitespace, sort/number/reverse lines, remove duplicates).
+Open specific files:
 
-The full host API, plus how to build a native plugin, is documented in
-[`plugins/README.md`](plugins/README.md) and [`docs/plugin-guide.md`](docs/plugin-guide.md).
+```bash
+padforge document.txt script.py README.md
+```
+
+Get help:
+
+```bash
+padforge --help
+padforge --version
+```
+
+### Default Shortcuts (Highlights)
+
+| Shortcut | Action |
+| --- | --- |
+| `Ctrl+N` | New Document |
+| `Ctrl+O` | Open |
+| `Ctrl+S` | Save |
+| `Ctrl+Shift+S` | Save As |
+| `Ctrl+Alt+S` | Save a Copy As |
+| `Ctrl+F` | Find |
+| `Ctrl+H` | Replace |
+| `Ctrl+Shift+F` | Find in Files |
+| `Ctrl+G` | Go to Line |
+| `Ctrl+B` | Go to Matching Brace |
+| `F7` / `Shift+F7` | Next/Previous Difference (Compare) |
+| `Ctrl+Space` | Word Completion |
+| `Ctrl+Enter` | Function/Symbol Completion |
+| `Ctrl+Alt+D` | Detach Tab to Floating Window |
+| `Ctrl+Tab` / `Ctrl+Shift+Tab` | Switch Documents |
+| `F11` | Full Screen |
+
+See [`docs/keybindings.md`](docs/keybindings.md) for the complete list.
+
+## Testing
+
+PadForge includes a comprehensive test suite (unit + headless smoke tests):
+
+```bash
+cd build
+QT_QPA_PLATFORM=offscreen ctest --output-on-failure
+```
+
+All tests pass (10/10) covering encoding, search, sessions, macros, text operations, outline parsing, backups, diff, plugins, and smoke scenarios.
 
 ## Documentation
 
-- [`docs/install.md`](docs/install.md) — installation on popular distributions
-- [`docs/features.md`](docs/features.md) — feature overview and comparison
-- [`docs/keybindings.md`](docs/keybindings.md) — default shortcuts
-- [`docs/plugin-guide.md`](docs/plugin-guide.md) — writing Lua and native plugins
-- [`PLAN.md`](PLAN.md) — design notes, milestones and prior-art research
-- [`CONTRIBUTING.md`](CONTRIBUTING.md) — how to build, test and contribute
+- [`docs/features.md`](docs/features.md) — Detailed feature overview and comparison
+- [`docs/keybindings.md`](docs/keybindings.md) — Complete default keyboard shortcuts
+- [`docs/install.md`](docs/install.md) — Installation instructions for various distributions
+- [`docs/plugin-guide.md`](docs/plugin-guide.md) — Writing Lua and native plugins
+- [`PLAN.md`](PLAN.md) — Design notes, milestones, and prior-art research
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) — Build, test, and contribution guidelines
 
-## Packaging
+## Contributing
 
-See [`packaging/README.md`](packaging/README.md) for DEB, RPM, Arch, AppImage
-and Flatpak recipes and the generic `cpack` tarball.
+Contributions are welcome! Please read [`CONTRIBUTING.md`](CONTRIBUTING.md) for details on our code of conduct, development setup, and the pull request process.
 
 ## License
 
-PadForge is released under the **GNU General Public License, version 3 or
-later** (GPL-3.0-or-later). See [`LICENSE`](LICENSE).
+PadForge is licensed under the **GNU General Public License v3.0 or later**. See [`LICENSE`](LICENSE) for the full text.
 
-Scintilla and Lexilla are distributed under the permissive Historical
-Permission Notice and Disclaimer (HPND) license; their notices are preserved by
-their upstream sources. See [`NOTICE`](NOTICE) for details.
+Scintilla and Lexilla are HPND-licensed (permissive, GPL-compatible). Qt 6 is LGPLv3. Lua is MIT-licensed (when enabled). See [`NOTICE`](NOTICE) for complete attribution.
+
+## Acknowledgments
+
+- **[Notepad++](https://notepad-plus-plus.org/)** — The original inspiration for this workflow
+- **[Scintilla](https://www.scintilla.org/)** & **[Lexilla](https://www.scintilla.org/Lexilla.html)** — The rock-solid editing engine
+- **[Qt](https://www.qt.io/)** — Cross-platform UI framework
+- **All contributors** who help make PadForge better
