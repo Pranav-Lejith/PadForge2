@@ -18,7 +18,7 @@ int main(int argc, char** argv)
 
     QCommandLineParser parser;
     parser.setApplicationDescription(
-        QStringLiteral("PadForge — a fast, native Linux text editor inspired by Notepad++."));
+        QStringLiteral("PadForge — a fast, native text editor inspired by Notepad++."));
     parser.addHelpOption();
     parser.addVersionOption();
     parser.addPositionalArgument(QStringLiteral("files"),

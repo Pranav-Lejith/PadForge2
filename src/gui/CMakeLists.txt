@@ -44,8 +44,21 @@ target_compile_definitions(padforge_gui PUBLIC SCINTILLA_QT=1)
 add_executable(padforge main.cpp)
 target_link_libraries(padforge PRIVATE padforge_gui)
 
+if(APPLE)
+    set_target_properties(padforge PROPERTIES
+        OUTPUT_NAME PadForge
+        MACOSX_BUNDLE TRUE
+        MACOSX_BUNDLE_GUI_IDENTIFIER org.padforge.PadForge
+        MACOSX_BUNDLE_BUNDLE_NAME PadForge
+        MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}")
+endif()
+
 if(WIN32)
     set_target_properties(padforge PROPERTIES WIN32_EXECUTABLE TRUE)
 endif()
 
-install(TARGETS padforge RUNTIME DESTINATION bin)
+if(APPLE)
+    install(TARGETS padforge BUNDLE DESTINATION .)
+else()
+    install(TARGETS padforge RUNTIME DESTINATION bin)
+endif()

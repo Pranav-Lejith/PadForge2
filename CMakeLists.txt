@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.21)
 
 project(PadForge
     VERSION 0.1.0
-    DESCRIPTION "A fast native Linux text editor with a Notepad++-style workflow"
+    DESCRIPTION "A fast native text editor with a Notepad++-style workflow"
     HOMEPAGE_URL "https://github.com/Pranav-Lejith/PadForge2"
     LANGUAGES CXX)
 
@@ -48,7 +48,7 @@ if(PADFORGE_BUILD_TESTS)
 endif()
 
 # ---- Desktop integration --------------------------------------------------
-if(UNIX AND TARGET padforge)
+if(UNIX AND NOT APPLE AND TARGET padforge)
     install(FILES
         "${CMAKE_CURRENT_SOURCE_DIR}/resources/org.padforge.PadForge.desktop"
         DESTINATION share/applications)

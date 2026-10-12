@@ -9,6 +9,7 @@
 #include <QFontComboBox>
 #include <QFormLayout>
 #include <QGroupBox>
+#include <QKeySequence>
 #include <QSpinBox>
 #include <QTabWidget>
 #include <QVBoxLayout>
@@ -47,7 +48,14 @@ PreferencesDialog::PreferencesDialog(const AppSettings& settings, QWidget* paren
     m_eol = new QCheckBox(tr("Show line endings"), this);
     m_indentGuides = new QCheckBox(tr("Indentation guides"), this);
     m_highlightLine = new QCheckBox(tr("Highlight current line"), this);
-    m_autoCompletion = new QCheckBox(tr("Word completion (Ctrl+Space)"), this);
+#ifdef Q_OS_MACOS
+    const QString completionShortcut = QKeySequence(Qt::META | Qt::Key_Space).toString(
+        QKeySequence::NativeText);
+#else
+    const QString completionShortcut = QKeySequence(Qt::CTRL | Qt::Key_Space).toString(
+        QKeySequence::NativeText);
+#endif
+    m_autoCompletion = new QCheckBox(tr("Word completion (%1)").arg(completionShortcut), this);
     m_autoClose = new QCheckBox(tr("Auto-close brackets"), this);
     m_autoCloseTags = new QCheckBox(tr("Auto-close HTML/XML tags"), this);
     m_calltips = new QCheckBox(tr("Parameter calltips"), this);

@@ -1,4 +1,4 @@
-name: Publish Linux packages
+name: Publish desktop releases
 
 on:
   push:
@@ -9,8 +9,8 @@ permissions:
   contents: write
 
 jobs:
-  release:
-    name: Build and publish Linux downloads
+  build-linux:
+    name: Build Linux downloads
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -53,6 +53,47 @@ jobs:
       - name: Build AppImage
         run: APPIMAGE_EXTRACT_AND_RUN=1 QMAKE=/usr/bin/qmake6 ./packaging/appimage/build-appimage.sh
 
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-downloads
+          path: |
+            dist/PadForge-amd64.deb
+            dist/PadForge-x86_64.AppImage
+          if-no-files-found: error
+
+  build-macos:
+    name: Build macOS app and disk image (Apple Silicon)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: brew install cmake ninja qt lua@5.4
+
+      - name: Build, test, and package macOS app
+        run: ./packaging/macos/package-macos.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-download
+          path: dist/PadForge-macos-arm64.dmg
+          if-no-files-found: error
+
+  publish-release:
+    name: Publish release downloads
+    needs: [build-linux, build-macos]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-downloads
+          path: dist
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: macos-download
+          path: dist
+
       - name: Publish public release assets
         env:
           GH_TOKEN: ${{ github.token }}
@@ -60,6 +101,7 @@ jobs:
           gh release create "$GITHUB_REF_NAME" \
             dist/PadForge-amd64.deb \
             dist/PadForge-x86_64.AppImage \
+            dist/PadForge-macos-arm64.dmg \
             --title "PadForge $GITHUB_REF_NAME" \
             --generate-notes \
             --verify-tag

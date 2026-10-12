@@ -11,9 +11,9 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter)
 
 set(PADFORGE_SCINTILLA_VERSION "5.6.7")
 set(PADFORGE_LEXILLA_VERSION "5.5.4")
-set(PADFORGE_SCINTILLA_URL "https://www.scintilla.org/scintilla567.tgz")
+set(PADFORGE_SCINTILLA_URL "https://downloads.sourceforge.net/project/scintilla/scintilla/5.6.7/scintilla567.tgz")
 set(PADFORGE_SCINTILLA_SHA256 "19e4476706750056f86ca70974810e4a5b08e73477e13f7d9fae78243606f6a7")
-set(PADFORGE_LEXILLA_URL "https://www.scintilla.org/lexilla554.tgz")
+set(PADFORGE_LEXILLA_URL "https://downloads.sourceforge.net/project/scintilla/lexilla/5.5.4/lexilla554.tgz")
 set(PADFORGE_LEXILLA_SHA256 "fcd9ef74236a12359d1039827c93dbf827aa476c46f9fd6eef60bb96db1af2f6")
 
 FetchContent_Declare(scintilla
@@ -83,7 +83,7 @@ target_include_directories(lexilla PUBLIC
     "${lexilla_SOURCE_DIR}/access"
     "${lexilla_SOURCE_DIR}/lexlib")
 target_link_libraries(lexilla PUBLIC scintilla)
-if(UNIX)
+if(UNIX AND NOT APPLE)
     target_link_libraries(lexilla PUBLIC dl)
 endif()
 add_library(PadForge::lexilla ALIAS lexilla)

@@ -36,6 +36,7 @@
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QLibrary>
 #include <QInputDialog>
 #include <QKeySequence>
 #include <QLabel>
@@ -62,6 +63,18 @@
 #include <algorithm>
 
 namespace PadForge {
+
+namespace {
+
+QKeySequence platformShortcut(QString sequence)
+{
+#ifdef Q_OS_MACOS
+    sequence.replace(QStringLiteral("Ctrl+"), QStringLiteral("Meta+"));
+#endif
+    return QKeySequence(sequence);
+}
+
+} // namespace
 
 namespace {
 
@@ -813,7 +826,7 @@ void MainWindow::createMenus() {
     QAction* aSaveAll = fileMenu->addAction(tr("Save A&ll"));
     connect(aSaveAll, &QAction::triggered, this, &MainWindow::saveAll);
     QAction* aSaveCopy = fileMenu->addAction(tr("Save a Copy A&s..."));
-    aSaveCopy->setShortcut(QKeySequence(QStringLiteral("Ctrl+Alt+S")));
+    aSaveCopy->setShortcut(platformShortcut(QStringLiteral("Ctrl+Alt+S")));
     connect(aSaveCopy, &QAction::triggered, this, &MainWindow::saveCurrentCopyAs);
     QAction* aReload = fileMenu->addAction(tr("Re&load from Disk"));
     connect(aReload, &QAction::triggered, this, &MainWindow::reloadCurrent);
@@ -913,7 +926,7 @@ void MainWindow::createMenus() {
         m_findDialog->activateWindow();
     });
     QAction* aReplace = editMenu->addAction(tr("&Replace..."));
-    aReplace->setShortcut(QKeySequence(QStringLiteral("Ctrl+H")));
+    aReplace->setShortcut(platformShortcut(QStringLiteral("Ctrl+H")));
     connect(aReplace, &QAction::triggered, this, [this]() {
         m_findDialog->showForReplaceMode(true);
         m_findDialog->show();
@@ -921,7 +934,7 @@ void MainWindow::createMenus() {
         m_findDialog->activateWindow();
     });
     QAction* aFindInFiles = editMenu->addAction(tr("Find in &Files..."));
-    aFindInFiles->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+F")));
+    aFindInFiles->setShortcut(platformShortcut(QStringLiteral("Ctrl+Shift+F")));
     connect(aFindInFiles, &QAction::triggered, this, [this]() {
         m_findDock->show();
         m_findDock->raise();
@@ -930,7 +943,7 @@ void MainWindow::createMenus() {
     });
     editMenu->addSeparator();
     QAction* aToggleBookmark = editMenu->addAction(tr("Toggle &Bookmark"));
-    aToggleBookmark->setShortcut(QKeySequence(QStringLiteral("Ctrl+F2")));
+    aToggleBookmark->setShortcut(platformShortcut(QStringLiteral("Ctrl+F2")));
     connect(aToggleBookmark, &QAction::triggered, this, [this]() {
         if (EditorWidget* editor = currentEditor())
             editor->toggleBookmark();
@@ -989,13 +1002,13 @@ void MainWindow::createMenus() {
     editMenu->addSeparator();
     auto* commentMenu = editMenu->addMenu(tr("Co&mment/Uncomment"));
     QAction* aLineComment = commentMenu->addAction(tr("Toggle Line Comment"));
-    aLineComment->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+C")));
+    aLineComment->setShortcut(platformShortcut(QStringLiteral("Ctrl+Shift+C")));
     connect(aLineComment, &QAction::triggered, this, [this]() {
         if (EditorWidget* editor = currentEditor())
             editor->toggleLineComment();
     });
     QAction* aBlockComment = commentMenu->addAction(tr("Toggle Block Comment"));
-    aBlockComment->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+B")));
+    aBlockComment->setShortcut(platformShortcut(QStringLiteral("Ctrl+Shift+B")));
     connect(aBlockComment, &QAction::triggered, this, [this]() {
         if (EditorWidget* editor = currentEditor())
             editor->toggleBlockComment();
@@ -1010,7 +1023,7 @@ void MainWindow::createMenus() {
     };
     editMenu->addSeparator();
     QAction* aDuplicateLine = editMenu->addAction(tr("Duplicate Current Line"));
-    aDuplicateLine->setShortcut(QKeySequence(QStringLiteral("Ctrl+D")));
+    aDuplicateLine->setShortcut(platformShortcut(QStringLiteral("Ctrl+D")));
     connect(aDuplicateLine, &QAction::triggered, this, [this]() {
         if (EditorWidget* editor = currentEditor())
             editor->duplicateCurrentLine();
@@ -1089,15 +1102,15 @@ void MainWindow::createMenus() {
     addTransform(tr("Untabify"), &EditorWidget::untabifySelection);
 
     QAction* aColumnEditor = editMenu->addAction(tr("Column Editor..."));
-    aColumnEditor->setShortcut(QKeySequence(QStringLiteral("Ctrl+Alt+C")));
+    aColumnEditor->setShortcut(platformShortcut(QStringLiteral("Ctrl+Alt+C")));
     connect(aColumnEditor, &QAction::triggered, this, &MainWindow::showColumnEditor);
 
     editMenu->addSeparator();
     QAction* aGoto = editMenu->addAction(tr("Go to &Line..."));
-    aGoto->setShortcut(QKeySequence(QStringLiteral("Ctrl+G")));
+    aGoto->setShortcut(platformShortcut(QStringLiteral("Ctrl+G")));
     connect(aGoto, &QAction::triggered, this, &MainWindow::showGotoLineDialog);
     QAction* aMatchBrace = editMenu->addAction(tr("Go to Matching &Brace"));
-    aMatchBrace->setShortcut(QKeySequence(QStringLiteral("Ctrl+B")));
+    aMatchBrace->setShortcut(platformShortcut(QStringLiteral("Ctrl+B")));
     connect(aMatchBrace, &QAction::triggered, this, [this]() {
         if (EditorWidget* editor = currentEditor())
             editor->gotoMatchingBrace();
@@ -1110,13 +1123,13 @@ void MainWindow::createMenus() {
     QAction* aSummary = editMenu->addAction(tr("Document &Summary..."));
     connect(aSummary, &QAction::triggered, this, &MainWindow::showDocumentSummary);
     QAction* aWordCompletion = editMenu->addAction(tr("Word Completion"));
-    aWordCompletion->setShortcut(QKeySequence(QStringLiteral("Ctrl+Space")));
+    aWordCompletion->setShortcut(platformShortcut(QStringLiteral("Ctrl+Space")));
     connect(aWordCompletion, &QAction::triggered, this, [this]() {
         if (EditorWidget* editor = currentEditor())
             editor->triggerCompletion();
     });
     QAction* aFunctionCompletion = editMenu->addAction(tr("Function &Completion"));
-    aFunctionCompletion->setShortcut(QKeySequence(QStringLiteral("Ctrl+Enter")));
+    aFunctionCompletion->setShortcut(platformShortcut(QStringLiteral("Ctrl+Enter")));
     connect(aFunctionCompletion, &QAction::triggered, this, [this]() {
         if (EditorWidget* editor = currentEditor())
             editor->triggerSymbolCompletion();
@@ -1437,10 +1450,10 @@ void MainWindow::createMenus() {
 
     m_windowMenu = bar->addMenu(tr("&Window"));
     QAction* aNextTab = m_windowMenu->addAction(tr("Next Tab"));
-    aNextTab->setShortcut(QKeySequence(QStringLiteral("Ctrl+Tab")));
+    aNextTab->setShortcut(platformShortcut(QStringLiteral("Ctrl+Tab")));
     connect(aNextTab, &QAction::triggered, this, [this]() { nextTab(true); });
     QAction* aPrevTab = m_windowMenu->addAction(tr("Previous Tab"));
-    aPrevTab->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+Tab")));
+    aPrevTab->setShortcut(platformShortcut(QStringLiteral("Ctrl+Shift+Tab")));
     connect(aPrevTab, &QAction::triggered, this, [this]() { nextTab(false); });
     QMenu* sortTabsMenu = m_windowMenu->addMenu(tr("Sort Tabs"));
     sortTabsMenu->addAction(tr("By Name"), this, [this]() { sortTabs(false); });
@@ -1449,7 +1462,7 @@ void MainWindow::createMenus() {
     m_windowMenu->addAction(aMoveView);
     m_windowMenu->addSeparator();
     QAction* aDetach = m_windowMenu->addAction(tr("Detach Current Tab to Floating Window"));
-    aDetach->setShortcut(QKeySequence(QStringLiteral("Ctrl+Alt+D")));
+    aDetach->setShortcut(platformShortcut(QStringLiteral("Ctrl+Alt+D")));
     connect(aDetach, &QAction::triggered, this, &MainWindow::detachCurrentToFloating);
     QAction* aMergeWindows = m_windowMenu->addAction(tr("Merge All Floating Windows"));
     connect(aMergeWindows, &QAction::triggered, this, &MainWindow::mergeFloatingWindows);
@@ -2524,9 +2537,9 @@ void MainWindow::loadPlugins() {
         if (!directory.exists())
             continue;
         m_pluginHost->loadLuaPluginsIn(dir);
-        for (const QString& entry :
-             directory.entryList({QStringLiteral("*.so"), QStringLiteral("*.so.*")}, QDir::Files)) {
-            m_pluginHost->loadNativePlugin(directory.absoluteFilePath(entry));
+        for (const QString& entry : directory.entryList(QDir::Files | QDir::NoDotAndDotDot)) {
+            if (QLibrary::isLibrary(entry))
+                m_pluginHost->loadNativePlugin(directory.absoluteFilePath(entry));
         }
     }
     showMessage(tr("Loaded %1 plugin(s).").arg(m_pluginHost->loadedPlugins().size()));

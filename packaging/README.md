@@ -54,6 +54,20 @@ packaging/appimage/build-appimage.sh
 
 Requires `linuxdeploy` and the `linuxdeploy-plugin-qt` binaries on `PATH`.
 
+## macOS
+
+On an Apple Silicon Mac with Homebrew, install the build tools and run the
+packaging script. It builds and tests the app bundle, embeds Qt and Lua runtime
+libraries, and creates `dist/PadForge-macos-arm64.dmg`:
+
+```sh
+brew install cmake ninja qt lua@5.4
+packaging/macos/package-macos.sh
+```
+
+The release workflow runs the same build on macOS and attaches the disk image
+to tagged releases.
+
 ## Flatpak
 
 ```sh

@@ -2,6 +2,8 @@
 
 PadForge follows the familiar Notepad++/desktop editor conventions.
 
+On macOS, the `Ctrl` modifier shown here uses the Command (`⌘`) key.
+
 ## Files
 
 | Shortcut | Action |

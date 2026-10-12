@@ -4,7 +4,7 @@
 
 ![PadForge Logo](resources/icons/org.padforge.PadForge.svg)
 
-**A fast, native Linux text editor inspired by the Notepad++ workflow.**
+**A fast, native text editor inspired by the Notepad++ workflow.**
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 [![C++20](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://isocpp.org/)
@@ -14,7 +14,7 @@
 
 </div>
 
-PadForge brings the familiar, efficient editing experience popularised by Notepad++ to a modern Linux stack. Built with **C++20**, **Qt 6 Widgets**, and the [Scintilla](https://www.scintilla.org/) editing component with [Lexilla](https://www.scintilla.org/Lexilla.html) for syntax highlighting, PadForge is lightweight, fast, and designed for power users.
+PadForge brings the familiar, efficient editing experience popularised by Notepad++ to Linux and macOS. Built with **C++20**, **Qt 6 Widgets**, and the [Scintilla](https://www.scintilla.org/) editing component with [Lexilla](https://www.scintilla.org/Lexilla.html) for syntax highlighting, PadForge is lightweight, fast, and designed for power users.
 
 > PadForge is an independent project. It is *inspired by* Notepad++ but is not affiliated with, endorsed by, or derived from the Notepad++ source. See [`NOTICE`](NOTICE).
 
@@ -25,6 +25,7 @@ PadForge brings the familiar, efficient editing experience popularised by Notepa
 - [Installation](#installation)
   - [AppImage](#appimage)
   - [Debian and Ubuntu](#debian-and-ubuntu)
+  - [macOS](#macos)
   - [Build from Source](#build-from-source)
 - [Building from Source](#building-from-source)
 - [Usage](#usage)
@@ -162,6 +163,15 @@ sudo pacman -Syu padforge
 
 The repository is hosted publicly and does not require a GitHub account.
 
+### macOS
+
+PadForge's macOS build targets Apple Silicon. Download the disk image from the
+[latest release](https://github.com/Pranav-Lejith/PadForge2/releases/latest),
+open `PadForge-macos-arm64.dmg`, and drag `PadForge.app` into Applications. The
+first macOS release will be attached after this build is merged and a new
+version is tagged. These initial builds are ad-hoc signed; macOS may ask you to
+confirm the first launch from Finder with Control-click → Open.
+
 ## Building from Source
 
 ### Requirements
@@ -193,6 +203,12 @@ sudo dnf install cmake ninja-build gcc-c++ python3 qt6-qtbase-devel qt6-qt5compa
 sudo pacman -S cmake ninja gcc python qt6-base qt6-5compat lua54
 ```
 
+**macOS (Homebrew):**
+
+```bash
+brew install cmake ninja qt lua@5.4
+```
+
 ### Build Steps
 
 ```bash
@@ -201,6 +217,16 @@ cd PadForge2
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DPADFORGE_ENABLE_LUA=ON -DPADFORGE_BUILD_TESTS=ON
 cmake --build build --parallel
 ```
+
+To build and test the macOS app bundle and create a disk image, run:
+
+```bash
+./packaging/macos/package-macos.sh
+```
+
+This script builds the Qt app bundle, includes the Lua runtime, runs the test
+suite, and writes `dist/PadForge-macos-arm64.dmg`. The macOS CI job runs the
+same script on an Apple Silicon runner.
 
 ### Install Locally
 
@@ -256,6 +282,7 @@ padforge --version
 | `Ctrl+Tab` / `Ctrl+Shift+Tab` | Switch Documents |
 | `F11` | Full Screen |
 
+On macOS, the `Ctrl` modifier in this list uses the Command (`⌘`) key.
 See [`docs/keybindings.md`](docs/keybindings.md) for the complete list.
 
 ## Testing

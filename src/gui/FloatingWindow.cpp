@@ -5,11 +5,24 @@
 
 #include <QCloseEvent>
 #include <QFileInfo>
+#include <QKeySequence>
 #include <QMenu>
 #include <QMenuBar>
 #include <QTabWidget>
 
 namespace PadForge {
+
+namespace {
+
+QKeySequence platformShortcut(QString sequence)
+{
+#ifdef Q_OS_MACOS
+    sequence.replace(QStringLiteral("Ctrl+"), QStringLiteral("Meta+"));
+#endif
+    return QKeySequence(sequence);
+}
+
+} // namespace
 
 FloatingWindow::FloatingWindow(QWidget* parent) : QMainWindow(parent) {
     setWindowTitle(tr("PadForge"));
@@ -23,7 +36,7 @@ FloatingWindow::FloatingWindow(QWidget* parent) : QMainWindow(parent) {
 
     QMenu* fileMenu = menuBar()->addMenu(tr("&File"));
     QAction* reattach = fileMenu->addAction(tr("Reattach to Main Window"));
-    reattach->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+D")));
+    reattach->setShortcut(platformShortcut(QStringLiteral("Ctrl+Shift+D")));
     connect(reattach, &QAction::triggered, this, &FloatingWindow::reattachAll);
     fileMenu->addSeparator();
     QAction* close = fileMenu->addAction(tr("&Close"));
