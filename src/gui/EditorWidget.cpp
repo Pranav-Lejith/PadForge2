@@ -476,7 +476,7 @@ QString EditorWidget::exportRtf() const {
             if (entry.color == color)
                 return entry.index;
         }
-        palette.append({color, palette.size() + 1}); // index 0 is reserved for auto
+        palette.append({color, static_cast<int>(palette.size()) + 1}); // index 0 is reserved for auto
         return palette.last().index;
     };
     for (const StyledRun& run : runs)
