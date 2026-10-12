@@ -112,7 +112,7 @@ plugin API** with two sample plugins.
 
 The Notepad++ plugin ABI cannot be reused on Linux. PadForge defines two layers:
 
-1. **Lua plugins** (primary, the shipped sample plugins): a sandboxed Lua state
+1. **Lua plugins** (primary, the shipped sample plugins): a restricted Lua state
    gets a `padforge` table with an editor/document API. Plugins live in
    `~/.config/PadForge/plugins/*.lua` and register menu commands at load time.
 2. **Native plugins** (optional): a small C ABI (`padforge_plugin.h`) with
@@ -126,7 +126,7 @@ symbols.
 
 ## 7. Build, packaging, CI
 
-- **Build:** CMake ≥ 3.21, C++20, Qt6 (`Core Gui Widgets Core5Compat Test`),
+- **Build:** CMake ≥ 3.21, C++20, Qt6 (`Core Gui Widgets PrintSupport Core5Compat Test`),
   Scintilla/Lexilla fetched and built from pinned sources.
 - **Packaging:** `.deb` (Debian/Ubuntu), `.rpm` (Fedora), `PKGBUILD` (Arch),
   AppImage, Flatpak.

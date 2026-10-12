@@ -388,8 +388,11 @@ QByteArray EncodingDetector::decodeToUtf8(const QByteArray& raw, const EncodingI
     return decode(raw, enc).toUtf8();
 }
 
-QByteArray EncodingDetector::encode(const QString& text, const EncodingInfo& enc)
+QByteArray EncodingDetector::encode(const QString& text, const EncodingInfo& enc,
+                                    bool* representable)
 {
+    if (representable)
+        *representable = true;
     switch (enc.charset) {
     case Charset::Utf16LE:
         return encodeUtf16(text, false, enc.bom);
@@ -400,15 +403,21 @@ QByteArray EncodingDetector::encode(const QString& text, const EncodingInfo& enc
     case Charset::Utf32BE:
         return encodeUtf32(text, true, enc.bom);
     case Charset::Latin1:
+        if (QString::fromLatin1(text.toLatin1()) != text) {
+            if (representable)
+                *representable = false;
+            return {};
+        }
         return text.toLatin1();
     case Charset::Ascii: {
-        QByteArray out = text.toUtf8();
-        for (char c : out)
-            if (static_cast<unsigned char>(c) >= 0x80) {
-                // Not representable: fall back to UTF-8 to avoid data loss.
-                return out;
+        for (const QChar c : text) {
+            if (c.unicode() > 0x7f) {
+                if (representable)
+                    *representable = false;
+                return {};
             }
-        return out;
+        }
+        return text.toLatin1();
     }
     case Charset::Utf8Bom: {
         QByteArray out = text.toUtf8();
@@ -421,8 +430,11 @@ QByteArray EncodingDetector::encode(const QString& text, const EncodingInfo& enc
     return text.toUtf8();
 }
 
-QByteArray EncodingDetector::encodeFromUtf8(const QByteArray& utf8, const EncodingInfo& enc)
+QByteArray EncodingDetector::encodeFromUtf8(const QByteArray& utf8, const EncodingInfo& enc,
+                                            bool* representable)
 {
+    if (representable)
+        *representable = true;
     if (enc.charset == Charset::Utf8)
         return utf8;
     if (enc.charset == Charset::Utf8Bom) {
@@ -431,7 +443,7 @@ QByteArray EncodingDetector::encodeFromUtf8(const QByteArray& utf8, const Encodi
             out.prepend("\xEF\xBB\xBF");
         return out;
     }
-    return encode(QString::fromUtf8(utf8), enc);
+    return encode(QString::fromUtf8(utf8), enc, representable);
 }
 
 Charset EncodingDetector::charsetFromName(const QString& name)

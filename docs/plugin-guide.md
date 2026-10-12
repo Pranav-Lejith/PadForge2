@@ -39,8 +39,10 @@ global `padforge` table:
 | `padforge.add_menu_item(name, fn)` | Add `name` to the Plugins menu |
 
 `print(...)` is also available and forwards to the status bar. The standard
-`string`, `table`, `math` and `utf8` libraries are available; `io` and `os` are
-not, so plugins cannot touch the filesystem directly.
+`string`, `table`, `math` and `utf8` libraries are available. `io`, `os`,
+`dofile` and `loadfile` are removed, so plugins cannot access files through Lua.
+Lua scripts run synchronously in the application process; only install plugins
+you trust, and use native plugins only when you trust their code fully.
 
 ### Example
 

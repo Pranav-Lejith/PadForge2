@@ -56,8 +56,10 @@ public:
     static QByteArray decodeToUtf8(const QByteArray& raw, const EncodingInfo& enc);
 
     // Encode UTF-8 (or a QString) back to raw bytes honouring charset + BOM.
-    static QByteArray encode(const QString& text, const EncodingInfo& enc);
-    static QByteArray encodeFromUtf8(const QByteArray& utf8, const EncodingInfo& enc);
+    static QByteArray encode(const QString& text, const EncodingInfo& enc,
+                             bool* representable = nullptr);
+    static QByteArray encodeFromUtf8(const QByteArray& utf8, const EncodingInfo& enc,
+                                     bool* representable = nullptr);
 
     static Charset charsetFromName(const QString& name);
     static QString charsetName(Charset c);

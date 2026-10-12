@@ -23,6 +23,7 @@ private slots:
     void utf16RoundTrip();
     void utf8BomRoundTrip();
     void latin1RoundTrip();
+    void latin1RejectsUnrepresentableText();
 };
 
 void TestEncoding::detectsUtf8Bom()
@@ -138,6 +139,15 @@ void TestEncoding::latin1RoundTrip()
     const QByteArray expected("caf\xE9 r\xE9sum\xE9"); // raw Latin-1 bytes
     QCOMPARE(encoded, expected);
     QCOMPARE(EncodingDetector::decode(encoded, {Charset::Latin1, false}), original);
+}
+
+void TestEncoding::latin1RejectsUnrepresentableText()
+{
+    bool representable = true;
+    const QByteArray encoded = EncodingDetector::encode(
+        QStringLiteral("snowman \u2603"), {Charset::Latin1, false}, &representable);
+    QVERIFY(!representable);
+    QVERIFY(encoded.isEmpty());
 }
 
 QTEST_MAIN(TestEncoding)

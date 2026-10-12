@@ -12,8 +12,10 @@ BuildRequires:  ninja-build
 BuildRequires:  gcc-c++
 BuildRequires:  python3
 BuildRequires:  qt6-qtbase-devel
+BuildRequires:  qt6-qt5compat-devel
 BuildRequires:  lua-devel
 Requires:       qt6-qtbase
+Requires:       qt6-qt5compat
 Requires:       hicolor-icon-theme
 
 %description

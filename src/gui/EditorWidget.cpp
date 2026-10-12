@@ -14,6 +14,7 @@
 #include <QFileInfo>
 #include <QMenu>
 #include <QRegularExpression>
+#include <QSaveFile>
 #include <QSet>
 #include <QString>
 #include <QTextBlockFormat>
@@ -641,9 +642,16 @@ bool EditorWidget::saveFileAs(const QString& path, QString* error) {
     else if (m_eol == Eol::Cr)
         text.replace(QChar('\n'), QChar('\r'));
 
-    const QByteArray raw = EncodingDetector::encode(text, m_encoding);
-    QFile file(path);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+    bool representable = true;
+    const QByteArray raw = EncodingDetector::encode(text, m_encoding, &representable);
+    if (!representable) {
+        if (error)
+            *error = tr("The document contains characters that cannot be saved as %1")
+                         .arg(m_encoding.displayName());
+        return false;
+    }
+    QSaveFile file(path);
+    if (!file.open(QIODevice::WriteOnly)) {
         if (error)
             *error = file.errorString();
         return false;
@@ -651,9 +659,14 @@ bool EditorWidget::saveFileAs(const QString& path, QString* error) {
     if (file.write(raw) != raw.size()) {
         if (error)
             *error = file.errorString();
+        file.cancelWriting();
         return false;
     }
-    file.close();
+    if (!file.commit()) {
+        if (error)
+            *error = file.errorString();
+        return false;
+    }
     m_filePath = path;
     setReadOnly(!QFileInfo(path).isWritable());
     m_editor->send(SCI_SETSAVEPOINT);
@@ -669,9 +682,16 @@ bool EditorWidget::saveCopyAs(const QString& path, QString* error) {
     else if (m_eol == Eol::Cr)
         text.replace(QChar('\n'), QChar('\r'));
 
-    const QByteArray raw = EncodingDetector::encode(text, m_encoding);
-    QFile file(path);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+    bool representable = true;
+    const QByteArray raw = EncodingDetector::encode(text, m_encoding, &representable);
+    if (!representable) {
+        if (error)
+            *error = tr("The document contains characters that cannot be saved as %1")
+                         .arg(m_encoding.displayName());
+        return false;
+    }
+    QSaveFile file(path);
+    if (!file.open(QIODevice::WriteOnly)) {
         if (error)
             *error = file.errorString();
         return false;
@@ -679,9 +699,14 @@ bool EditorWidget::saveCopyAs(const QString& path, QString* error) {
     if (file.write(raw) != raw.size()) {
         if (error)
             *error = file.errorString();
+        file.cancelWriting();
         return false;
     }
-    file.close();
+    if (!file.commit()) {
+        if (error)
+            *error = file.errorString();
+        return false;
+    }
     return true;
 }
 

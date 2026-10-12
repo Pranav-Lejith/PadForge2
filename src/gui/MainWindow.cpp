@@ -323,13 +323,20 @@ void MainWindow::closeEditor(EditorWidget* editor) {
         if (choice == QMessageBox::Cancel)
             return;
         if (choice == QMessageBox::Save) {
+            QString error;
+            bool saved = false;
             if (editor->filePath().isEmpty()) {
                 const QString path = QFileDialog::getSaveFileName(this, tr("Save As"));
                 if (path.isEmpty())
                     return;
-                editor->saveFileAs(path);
+                saved = editor->saveFileAs(path, &error);
             } else {
-                editor->saveFile();
+                saved = editor->saveFile(&error);
+            }
+            if (!saved) {
+                QMessageBox::warning(this, tr("PadForge"),
+                                     tr("Cannot save file:\n%1").arg(error));
+                return;
             }
         }
     }
@@ -644,15 +651,23 @@ void MainWindow::closeEvent(QCloseEvent* event) {
                 return;
             }
             if (choice == QMessageBox::Save) {
+                QString error;
+                bool saved = false;
                 if (editor->filePath().isEmpty()) {
                     const QString path = QFileDialog::getSaveFileName(this, tr("Save As"));
                     if (path.isEmpty()) {
                         event->ignore();
                         return;
                     }
-                    editor->saveFileAs(path);
+                    saved = editor->saveFileAs(path, &error);
                 } else {
-                    editor->saveFile();
+                    saved = editor->saveFile(&error);
+                }
+                if (!saved) {
+                    QMessageBox::warning(this, tr("PadForge"),
+                                         tr("Cannot save file:\n%1").arg(error));
+                    event->ignore();
+                    return;
                 }
             }
         }
@@ -1606,6 +1621,8 @@ void MainWindow::saveAll() {
     for (EditorWidget* editor : m_editors) {
         if (!editor->isModified())
             continue;
+        QString error;
+        bool saved = false;
         if (editor->filePath().isEmpty()) {
             auto* tabs = tabWidgetFor(editor);
             if (tabs)
@@ -1613,9 +1630,13 @@ void MainWindow::saveAll() {
             const QString path = QFileDialog::getSaveFileName(this, tr("Save As"));
             if (path.isEmpty())
                 continue;
-            editor->saveFileAs(path);
+            saved = editor->saveFileAs(path, &error);
         } else {
-            editor->saveFile();
+            saved = editor->saveFile(&error);
+        }
+        if (!saved && !error.isEmpty()) {
+            QMessageBox::warning(this, tr("PadForge"),
+                                 tr("Cannot save file:\n%1").arg(error));
         }
     }
 }

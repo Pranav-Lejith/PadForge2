@@ -37,6 +37,8 @@ private slots:
     void characterMapBuildsGrid();
     void backupOnSaveWritesDotBak();
     void saveCopyAsLeavesDocumentUntouched();
+    void saveRejectsUnrepresentableTextAndPreservesDirtyState();
+    void failedSavePreservesDirtyState();
     void setFirstVisibleLineScrolls();
     void compareMarkersSetAndClear();
     void searchResultsPanelBuildsGroups();
@@ -308,6 +310,32 @@ void SmokeTest::saveCopyAsLeavesDocumentUntouched() {
     QFile copyFile(copy);
     QVERIFY(copyFile.open(QIODevice::ReadOnly));
     QCOMPARE(QString::fromUtf8(copyFile.readAll()), QStringLiteral("a\nb\nc\n"));
+}
+
+void SmokeTest::saveRejectsUnrepresentableTextAndPreservesDirtyState() {
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    EditorWidget editor;
+    editor.setDocumentText(QStringLiteral("snowman \u2603"));
+    editor.setEncoding({Charset::Latin1, false}, false);
+
+    const QString path = dir.filePath(QStringLiteral("latin1.txt"));
+    QString error;
+    QVERIFY(!editor.saveFileAs(path, &error));
+    QVERIFY(error.contains(QStringLiteral("cannot be saved as Latin-1"), Qt::CaseInsensitive));
+    QVERIFY(!QFileInfo::exists(path));
+    QVERIFY(editor.isModified());
+}
+
+void SmokeTest::failedSavePreservesDirtyState() {
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    EditorWidget editor;
+    editor.setDocumentText(QStringLiteral("keep this"));
+    QString error;
+    QVERIFY(!editor.saveFileAs(dir.filePath(QStringLiteral("missing/out.txt")), &error));
+    QVERIFY(!error.isEmpty());
+    QVERIFY(editor.isModified());
 }
 
 void SmokeTest::setFirstVisibleLineScrolls() {

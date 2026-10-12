@@ -86,7 +86,7 @@ being a port of its code.
 ## Automation
 
 - **Macros**: record, store and replay editing sequences.
-- **Plugins**: a small, stable C ABI plus a sandboxed **Lua** runtime. Both
+- **Plugins**: a small, stable C ABI plus a restricted **Lua** runtime. Both
   plugin styles share the same host capability surface.
 - **Script Console** (`View > Script Console` or `Tools > Script Console`): an
   interactive **Lua REPL** sharing the plugin runtime, with command history

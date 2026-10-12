@@ -44,6 +44,7 @@ private slots:
     void replExpressionRetry();
     void replRoutesPrintThroughOutputSink();
     void replSurfacesErrors();
+    void luaRuntimeHidesFilesystemAccess();
 };
 
 void PluginTest::loadsSamplePlugins()
@@ -147,6 +148,16 @@ void PluginTest::replSurfacesErrors()
     QString error;
     QVERIFY(!host.evaluateLua(QStringLiteral("this is not lua"), nullptr, &error));
     QVERIFY(!error.isEmpty());
+}
+
+void PluginTest::luaRuntimeHidesFilesystemAccess()
+{
+    FakeContext context;
+    PluginHost host(&context);
+    QString result;
+    QVERIFY(host.evaluateLua(QStringLiteral(
+        "dofile == nil and loadfile == nil and io == nil and os == nil"), &result));
+    QCOMPARE(result, QStringLiteral("true"));
 }
 
 QTEST_MAIN(PluginTest)

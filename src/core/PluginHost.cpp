@@ -300,6 +300,12 @@ void PluginHost::setupLua()
         return;
     luaL_requiref(m_lua, LUA_GNAME, luaopen_base, 1);
     lua_pop(m_lua, 1);
+    // Lua's base library otherwise exposes filesystem-backed script loading.
+    // Plugins are restricted to the host API and the pure standard libraries.
+    lua_pushnil(m_lua);
+    lua_setglobal(m_lua, "dofile");
+    lua_pushnil(m_lua);
+    lua_setglobal(m_lua, "loadfile");
     luaL_requiref(m_lua, LUA_TABLIBNAME, luaopen_table, 1);
     lua_pop(m_lua, 1);
     luaL_requiref(m_lua, LUA_STRLIBNAME, luaopen_string, 1);

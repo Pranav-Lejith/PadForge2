@@ -83,7 +83,7 @@ PadForge brings the familiar, efficient editing experience popularised by Notepa
 ### Customization & Extensibility
 - **8 Beautiful Themes**: Light, Dark, Solarized (Light/Dark), Monokai, Dracula, Nord, and Gruvbox
 - **Preferences Dialog**: Comprehensive settings for fonts, tabs, margins, display, and behavior
-- **Plugin System**: Sandboxable **Lua** plugins and a stable **C ABI** for native plugins
+- **Plugin System**: Restricted **Lua** plugins and a stable **C ABI** for native plugins
 - **Script Console**: Interactive Lua REPL with command history
 - **Read-Only Mode**: Toggle read-only state with automatic detection for locked files
 
@@ -182,7 +182,7 @@ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build &
 
 - **CMake** ≥ 3.21
 - **C++20** compiler (GCC 13+ or Clang 15+)
-- **Qt 6** (Core, Gui, Widgets, Test)
+- **Qt 6** (Core, Gui, Widgets, PrintSupport, Core5Compat, Test)
 - **Ninja** (recommended) or Make
 - **Python 3** (required for Scintilla/Lexilla WidgetGen)
 - **Lua 5.4** (optional but recommended for plugin support)
@@ -192,19 +192,19 @@ cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build &
 **Debian/Ubuntu:**
 
 ```bash
-sudo apt install cmake ninja-build g++ python3 qt6-base-dev qt6-base-dev-tools libgl1-mesa-dev liblua5.4-dev
+sudo apt install cmake ninja-build g++ python3 qt6-base-dev qt6-base-dev-tools qt6-5compat-dev libgl1-mesa-dev liblua5.4-dev
 ```
 
 **Fedora:**
 
 ```bash
-sudo dnf install cmake ninja-build gcc-c++ python3 qt6-qtbase-devel lua-devel
+sudo dnf install cmake ninja-build gcc-c++ python3 qt6-qtbase-devel qt6-qt5compat-devel lua-devel
 ```
 
 **Arch Linux:**
 
 ```bash
-sudo pacman -S cmake ninja gcc python qt6-base lua
+sudo pacman -S cmake ninja gcc python qt6-base qt6-5compat lua
 ```
 
 ### Build Steps

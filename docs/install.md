@@ -10,10 +10,10 @@ the project matures.
 
 | Distribution | Command |
 | --- | --- |
-| Arch Linux | `sudo pacman -S --needed base-devel cmake ninja qt6-base lua python` |
-| Debian / Ubuntu | `sudo apt install build-essential cmake ninja-build python3 qt6-base-dev qt6-base-dev-tools libgl1-mesa-dev liblua5.4-dev` |
-| Fedora | `sudo dnf install gcc-c++ cmake ninja-build python3 qt6-qtbase-devel lua-devel` |
-| openSUSE | `sudo zypper install gcc-c++ cmake ninja python3 qt6-base-devel lua54-devel` |
+| Arch Linux | `sudo pacman -S --needed base-devel cmake ninja qt6-base qt6-5compat lua python` |
+| Debian / Ubuntu | `sudo apt install build-essential cmake ninja-build python3 qt6-base-dev qt6-base-dev-tools qt6-5compat-dev libgl1-mesa-dev liblua5.4-dev` |
+| Fedora | `sudo dnf install gcc-c++ cmake ninja-build python3 qt6-qtbase-devel qt6-qt5compat-devel lua-devel` |
+| openSUSE | `sudo zypper install gcc-c++ cmake ninja python3 qt6-base-devel qt6-qt5compat-devel lua54-devel` |
 
 ### 2. Configure and build
 
