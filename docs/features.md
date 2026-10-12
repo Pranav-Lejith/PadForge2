@@ -6,6 +6,14 @@ being a port of its code.
 ## Editing
 
 - Tabbed documents with drag-reorderable tabs and a closable tab bar.
+- **Tab context menu** (right-click a tab): Close, Close All But This, Close All
+  to the Left/Right, Close All, Save, Save As, Reload from Disk, Rename, Copy
+  Full Path, Open Containing Folder, Move to Other View. **Middle-click** a tab
+  to close it; **Sort Tabs** (Window menu) orders tabs by name or path.
+- **Rename** a document (File menu or tab menu) renames the file on disk and
+  updates its tab; an untitled document is saved under the new name instead.
+- **Open Containing Folder** reveals the current file in the system file manager.
+- **Close All** and **Close All But This** from the File menu.
 - Optional **split view** with a second tab group; move documents between the two.
 - Undo/redo, cut/copy/paste, select all, incremental search highlighting.
 - **Bookmarks** (toggle, next/previous, clear, invert) with a dedicated margin.

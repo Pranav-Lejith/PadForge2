@@ -99,6 +99,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `test_diff` unit suite (LCS-based line diff with reconstruction round-trips),
   `test_textops` line-address tests and smoke tests for compare markers and the
   results panel (16 smoke tests).
+- **Tab context menu** (right-click a tab): Close, Close All But This, Close All
+  to the Left/Right, Close All, Save, Save As, Reload from Disk, Rename, Copy
+  Full Path, Open Containing Folder and Move to Other View; **middle-click** a tab
+  to close it.
+- **Rename...** (File menu and tab menu) renames the file on disk and updates its
+  tab (an untitled document is saved under the new name); **Open Containing
+  Folder** reveals the current file in the system file manager.
+- **Close All** and **Close All But This** in the File menu, and **Sort Tabs**
+  (by name or path) in the Window menu.
+- Smoke tests for rename, close-all/close-others, tab sorting and the modified
+  tab-title marker (20 smoke tests).
+
+### Fixed
+
+- Tab operations (title updates, the modified `*` marker, close, Move to Other
+  View, and the document map/function-list source tracking) resolved the owning
+  tab widget from a page's `parentWidget()`, which is the `QTabWidget`'s internal
+  `QStackedWidget`; they now resolve it by index (`tabWidgetFor`). Tab titles,
+  the modified marker and cross-view moves now work reliably.
 
 ## [0.1.0] - 2026-10-11
 

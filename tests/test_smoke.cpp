@@ -40,6 +40,10 @@ private slots:
     void setFirstVisibleLineScrolls();
     void compareMarkersSetAndClear();
     void searchResultsPanelBuildsGroups();
+    void documentRenameMovesFile();
+    void closeOtherAndAllDocuments();
+    void sortTabsReordersByName();
+    void tabTitleReflectsModification();
 };
 
 void SmokeTest::newDocumentHoldsText() {
@@ -355,6 +359,100 @@ void SmokeTest::searchResultsPanelBuildsGroups() {
     QCOMPARE(second->child(0)->text(1), QStringLiteral("1"));
     QCOMPARE(second->child(0)->text(2), QStringLiteral("5"));
     QCOMPARE(second->child(1)->data(0, Qt::UserRole + 1).toInt(), 2);
+}
+
+void SmokeTest::documentRenameMovesFile() {
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString path = dir.filePath(QStringLiteral("old.txt"));
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::WriteOnly));
+    file.write("hello\n");
+    file.close();
+
+    MainWindow window;
+    EditorWidget* editor = window.openPath(path);
+    QVERIFY(editor != nullptr);
+    QVERIFY(window.documentCount() >= 1);
+
+    const QString renamed = dir.filePath(QStringLiteral("new.txt"));
+    window.renameCurrentDocument(renamed);
+    QCOMPARE(editor->filePath(), renamed);
+    QVERIFY(QFileInfo::exists(renamed));
+    QVERIFY(!QFileInfo::exists(path));
+    QVERIFY(window.documentTabTitles().contains(QStringLiteral("new.txt")));
+}
+
+void SmokeTest::closeOtherAndAllDocuments() {
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    QStringList paths;
+    for (int i = 0; i < 3; ++i) {
+        const QString path = dir.filePath(QStringLiteral("f%1.txt").arg(i));
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write("data\n");
+        file.close();
+        paths << path;
+    }
+
+    MainWindow window;
+    window.openPaths(paths);
+    // Three opened files plus the initial untitled document.
+    QCOMPARE(window.documentCount(), 4);
+
+    window.closeOtherDocuments();
+    QCOMPARE(window.documentCount(), 1);
+
+    window.closeAllDocuments();
+    QCOMPARE(window.documentCount(), 0);
+}
+
+void SmokeTest::sortTabsReordersByName() {
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QStringList names = {QStringLiteral("b.txt"), QStringLiteral("a.txt"),
+                               QStringLiteral("c.txt")};
+    QStringList paths;
+    for (const QString& name : names) {
+        const QString path = dir.filePath(name);
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::WriteOnly));
+        file.write("x\n");
+        file.close();
+        paths << path;
+    }
+
+    MainWindow window;
+    window.openPaths(paths);
+    window.sortTabs(false);
+
+    const QStringList titles = window.documentTabTitles();
+    const int a = titles.indexOf(QStringLiteral("a.txt"));
+    const int b = titles.indexOf(QStringLiteral("b.txt"));
+    const int c = titles.indexOf(QStringLiteral("c.txt"));
+    QVERIFY(a >= 0 && b >= 0 && c >= 0);
+    QVERIFY(a < b);
+    QVERIFY(b < c);
+}
+
+void SmokeTest::tabTitleReflectsModification() {
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString path = dir.filePath(QStringLiteral("mod.txt"));
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::WriteOnly));
+    file.write("original\n");
+    file.close();
+
+    MainWindow window;
+    EditorWidget* editor = window.openPath(path);
+    QVERIFY(editor != nullptr);
+    QVERIFY(window.documentTabTitles().contains(QStringLiteral("mod.txt")));
+
+    editor->setDocumentText(QStringLiteral("changed\n"));
+    QVERIFY(editor->isModified());
+    QVERIFY(window.documentTabTitles().contains(QStringLiteral("mod.txt *")));
 }
 
 QTEST_MAIN(SmokeTest)

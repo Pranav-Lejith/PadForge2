@@ -14,6 +14,9 @@ with [Lexilla](https://www.scintilla.org/Lexilla.html) for syntax highlighting.
 ## Features
 
 - **Tabbed editing** with a separate **split view** for side-by-side files.
+- **Tab workflow**: right-click tab menu (close others/left/right/all, save,
+  reload, rename, copy path, open containing folder), middle-click to close, and
+  sort tabs by name or path.
 - **Syntax highlighting for 50+ languages** via Lexilla, with automatic
   detection from the file extension, shebang or content.
 - **Encoding aware**: UTF-8 (with/without BOM), UTF-16 LE/BE, UTF-32 LE/BE and

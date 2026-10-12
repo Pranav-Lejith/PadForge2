@@ -9,6 +9,8 @@
 #include <QCryptographicHash>
 #include <QList>
 #include <QMainWindow>
+#include <QPoint>
+#include <QStringList>
 #include <QTimer>
 
 class QAction;
@@ -47,6 +49,15 @@ public:
     void openPaths(const QStringList& paths);
     EditorWidget* newDocument(const QString& text = QString(), const QString& path = QString());
 
+    // Document tab workflow.
+    int documentCount() const { return m_editors.size(); }
+    QStringList documentTabTitles() const;
+    void renameCurrentDocument(const QString& newPath = QString());
+    void showCurrentInFileManager();
+    void closeOtherDocuments();
+    void closeAllDocuments();
+    void sortTabs(bool byPath);
+
     // PluginContext
     void insertText(const QString& text) override;
     void setDocumentText(const QString& text) override;
@@ -63,6 +74,7 @@ public:
 
 protected:
     void closeEvent(QCloseEvent* event) override;
+    bool eventFilter(QObject* watched, QEvent* event) override;
 
 private:
     // Construction helpers
@@ -76,6 +88,7 @@ private:
     // Documents
     EditorWidget* createEditor();
     EditorWidget* currentEditor() const;
+    QTabWidget* tabWidgetFor(EditorWidget* editor) const;
     void addEditor(EditorWidget* editor, QTabWidget* view);
     void registerEditor(EditorWidget* editor);
     void closeEditor(EditorWidget* editor);
@@ -83,6 +96,17 @@ private:
     void updateWindowTitle();
     void updateStatus();
     void applyThemeToAll();
+
+    // Tab context menu and multi-document operations.
+    void showTabContextMenu(QTabWidget* tabs, int index, const QPoint& globalPos);
+    void saveEditor(EditorWidget* editor);
+    void saveEditorAs(EditorWidget* editor);
+    void reloadEditor(EditorWidget* editor);
+    void renameEditor(EditorWidget* editor, const QString& newPath = QString());
+    void openContainingFolder(EditorWidget* editor);
+    void copyEditorPath(EditorWidget* editor);
+    void moveEditorToOtherView(EditorWidget* editor);
+    void closeDocumentRange(QTabWidget* tabs, int first, int last);
 
     // File actions
     void newDocumentDialog();

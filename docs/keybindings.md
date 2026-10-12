@@ -70,6 +70,11 @@ PadForge follows the familiar Notepad++/desktop editor conventions.
 | `Alt+1`..`Alt+9` | Jump to document 1..9 |
 | `Ctrl+Alt+D` | Detach current tab to floating window |
 
+> Right-click a tab for the tab context menu (close others/left/right/all, save,
+> reload, rename, copy path, open containing folder, move to other view);
+> **middle-click** a tab to close it. **Sort Tabs** (by name or path) is in the
+> Window menu.
+
 ## Tools
 
 | Shortcut | Action |

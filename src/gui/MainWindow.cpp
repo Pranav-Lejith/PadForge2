@@ -29,6 +29,7 @@
 #include <QClipboard>
 #include <QCloseEvent>
 #include <QCoreApplication>
+#include <QDesktopServices>
 #include <QDialog>
 #include <QDir>
 #include <QDockWidget>
@@ -42,6 +43,8 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QMouseEvent>
+#include <QPair>
 #include <QPrintDialog>
 #include <QPrintPreviewDialog>
 #include <QPrinter>
@@ -49,9 +52,11 @@
 #include <QSplitter>
 #include <QStandardPaths>
 #include <QStatusBar>
+#include <QTabBar>
 #include <QTabWidget>
 #include <QTextDocument>
 #include <QToolBar>
+#include <QUrl>
 #include <Scintilla.h>
 #include <ScintillaEdit.h>
 #include <algorithm>
@@ -121,6 +126,18 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
         closeEditor(qobject_cast<EditorWidget*>(m_subTabs->widget(index)));
     });
 
+    for (QTabWidget* tabs : {m_mainTabs, m_subTabs}) {
+        tabs->tabBar()->setContextMenuPolicy(Qt::CustomContextMenu);
+        tabs->tabBar()->installEventFilter(this);
+        connect(tabs->tabBar(), &QTabBar::customContextMenuRequested, this,
+                [this, tabs](const QPoint& pos) {
+                    const int index = tabs->tabBar()->tabAt(pos);
+                    if (index >= 0)
+                        m_activeTabs = tabs;
+                    showTabContextMenu(tabs, index, tabs->tabBar()->mapToGlobal(pos));
+                });
+    }
+
     m_findDialog = new FindReplaceDialog(this);
     connect(m_findDialog, &FindReplaceDialog::findNextRequested, this,
             [this]() { findNext(false); });
@@ -181,6 +198,18 @@ EditorWidget* MainWindow::currentEditor() const {
     if (!m_activeTabs)
         return nullptr;
     return qobject_cast<EditorWidget*>(m_activeTabs->currentWidget());
+}
+
+QTabWidget* MainWindow::tabWidgetFor(EditorWidget* editor) const {
+    if (!editor)
+        return nullptr;
+    // A tab page's parentWidget() is the QTabWidget's internal QStackedWidget,
+    // not the QTabWidget itself, so resolve the owner by index instead.
+    if (m_mainTabs && m_mainTabs->indexOf(editor) >= 0)
+        return m_mainTabs;
+    if (m_subTabs && m_subTabs->indexOf(editor) >= 0)
+        return m_subTabs;
+    return nullptr;
 }
 
 void MainWindow::addEditor(EditorWidget* editor, QTabWidget* view) {
@@ -248,7 +277,7 @@ EditorWidget* MainWindow::openPath(const QString& path, bool switchTo) {
     for (EditorWidget* editor : m_editors) {
         if (!editor->filePath().isEmpty() && QDir::cleanPath(editor->filePath()) == clean) {
             if (switchTo) {
-                auto* tabs = qobject_cast<QTabWidget*>(editor->parentWidget());
+                auto* tabs = tabWidgetFor(editor);
                 if (tabs) {
                     tabs->setCurrentWidget(editor);
                     m_activeTabs = tabs;
@@ -282,7 +311,7 @@ void MainWindow::closeEditor(EditorWidget* editor) {
         return;
     if (editor == m_compareA || editor == m_compareB)
         clearCompare();
-    auto* tabs = qobject_cast<QTabWidget*>(editor->parentWidget());
+    auto* tabs = tabWidgetFor(editor);
     if (editor->isModified()) {
         const QString name = editor->filePath().isEmpty()
                                  ? tr("Untitled")
@@ -312,8 +341,248 @@ void MainWindow::closeEditor(EditorWidget* editor) {
     updateWindowTitle();
 }
 
+bool MainWindow::eventFilter(QObject* watched, QEvent* event) {
+    if (event->type() == QEvent::MouseButtonRelease) {
+        auto* mouse = static_cast<QMouseEvent*>(event);
+        if (mouse->button() == Qt::MiddleButton) {
+            for (QTabWidget* tabs : {m_mainTabs, m_subTabs}) {
+                if (watched != tabs->tabBar())
+                    continue;
+                const int index = tabs->tabBar()->tabAt(mouse->position().toPoint());
+                if (index >= 0) {
+                    closeEditor(qobject_cast<EditorWidget*>(tabs->widget(index)));
+                    return true;
+                }
+            }
+        }
+    }
+    return QMainWindow::eventFilter(watched, event);
+}
+
+QStringList MainWindow::documentTabTitles() const {
+    QStringList titles;
+    if (!m_activeTabs)
+        return titles;
+    for (int i = 0; i < m_activeTabs->count(); ++i)
+        titles.append(m_activeTabs->tabText(i));
+    return titles;
+}
+
+void MainWindow::showTabContextMenu(QTabWidget* tabs, int index, const QPoint& globalPos) {
+    QMenu menu(this);
+    auto* editor = index >= 0 ? qobject_cast<EditorWidget*>(tabs->widget(index)) : nullptr;
+    if (editor) {
+        menu.addAction(tr("Close"), this, [this, editor]() { closeEditor(editor); });
+        menu.addAction(tr("Close All But This"), this, [this, editor]() {
+            m_activeTabs = tabWidgetFor(editor);
+            if (m_activeTabs)
+                m_activeTabs->setCurrentWidget(editor);
+            closeOtherDocuments();
+        });
+        menu.addAction(tr("Close All to the Left"), this,
+                       [this, tabs, index]() { closeDocumentRange(tabs, 0, index - 1); });
+        menu.addAction(tr("Close All to the Right"), this, [this, tabs, index]() {
+            closeDocumentRange(tabs, index + 1, tabs->count() - 1);
+        });
+        menu.addSeparator();
+        menu.addAction(tr("Save"), this, [this, editor]() { saveEditor(editor); });
+        menu.addAction(tr("Save As..."), this, [this, editor]() { saveEditorAs(editor); });
+        if (!editor->filePath().isEmpty())
+            menu.addAction(tr("Reload from Disk"), this,
+                           [this, editor]() { reloadEditor(editor); });
+        menu.addSeparator();
+        menu.addAction(tr("Rename..."), this, [this, editor]() { renameEditor(editor); });
+        if (!editor->filePath().isEmpty()) {
+            menu.addAction(tr("Copy Full Path"), this,
+                           [this, editor]() { copyEditorPath(editor); });
+            menu.addAction(tr("Open Containing Folder"), this,
+                           [this, editor]() { openContainingFolder(editor); });
+        }
+        menu.addSeparator();
+        menu.addAction(tr("Move to Other View"), this,
+                       [this, editor]() { moveEditorToOtherView(editor); });
+        menu.addSeparator();
+    }
+    menu.addAction(tr("Close All"), this, &MainWindow::closeAllDocuments);
+    menu.exec(globalPos);
+}
+
+void MainWindow::saveEditor(EditorWidget* editor) {
+    if (!editor)
+        return;
+    if (editor->filePath().isEmpty()) {
+        saveEditorAs(editor);
+        return;
+    }
+    QString error;
+    if (!editor->saveFile(&error))
+        QMessageBox::warning(this, tr("PadForge"), tr("Cannot save file:\n%1").arg(error));
+}
+
+void MainWindow::saveEditorAs(EditorWidget* editor) {
+    if (!editor)
+        return;
+    const QString path = QFileDialog::getSaveFileName(this, tr("Save As"), editor->filePath());
+    if (path.isEmpty())
+        return;
+    QString error;
+    if (!editor->saveFileAs(path, &error))
+        QMessageBox::warning(this, tr("PadForge"), tr("Cannot save file:\n%1").arg(error));
+}
+
+void MainWindow::reloadEditor(EditorWidget* editor) {
+    if (!editor || editor->filePath().isEmpty())
+        return;
+    if (editor->isModified() &&
+        QMessageBox::question(this, tr("Reload from Disk"),
+                              tr("Discard unsaved changes to \"%1\" and reload from disk?")
+                                  .arg(QFileInfo(editor->filePath()).fileName()),
+                              QMessageBox::Yes | QMessageBox::No,
+                              QMessageBox::No) != QMessageBox::Yes)
+        return;
+    const int line = editor->currentLine();
+    QString error;
+    if (!editor->openFile(editor->filePath(), &error))
+        QMessageBox::warning(this, tr("PadForge"), tr("Cannot reload file:\n%1").arg(error));
+    else
+        editor->gotoLine(line);
+}
+
+void MainWindow::renameEditor(EditorWidget* editor, const QString& newPath) {
+    if (!editor)
+        return;
+    QString target = newPath;
+    if (target.isEmpty()) {
+        const QString initial =
+            editor->filePath().isEmpty() ? QString() : QFileInfo(editor->filePath()).fileName();
+        target = QInputDialog::getText(this, tr("Rename"), tr("New file name:"), QLineEdit::Normal,
+                                       initial);
+        if (target.isEmpty())
+            return;
+        if (!editor->filePath().isEmpty() && QFileInfo(target).isRelative())
+            target = QFileInfo(editor->filePath()).absoluteDir().filePath(target);
+    }
+    if (editor->filePath().isEmpty()) {
+        // An untitled document has nothing to rename on disk; save it instead.
+        QString error;
+        if (!editor->saveFileAs(target, &error))
+            QMessageBox::warning(this, tr("PadForge"), tr("Cannot save file:\n%1").arg(error));
+        return;
+    }
+    if (QDir::cleanPath(target) == QDir::cleanPath(editor->filePath()))
+        return;
+    if (QFileInfo::exists(target)) {
+        QMessageBox::warning(this, tr("Rename"),
+                             tr("A file named \"%1\" already exists.").arg(target));
+        return;
+    }
+    const QString oldPath = editor->filePath();
+    if (!QFile::rename(oldPath, target)) {
+        QMessageBox::warning(this, tr("Rename"), tr("Cannot rename the file to:\n%1").arg(target));
+        return;
+    }
+    editor->setFilePath(target);
+    updateTabTitle(editor);
+    addRecent(target);
+    if (editor == currentEditor())
+        updateWindowTitle();
+    showMessage(tr("Renamed to \"%1\".").arg(QFileInfo(target).fileName()));
+}
+
+void MainWindow::openContainingFolder(EditorWidget* editor) {
+    if (!editor || editor->filePath().isEmpty())
+        return;
+    const QString dir = QFileInfo(editor->filePath()).absolutePath();
+    if (!QDesktopServices::openUrl(QUrl::fromLocalFile(dir)))
+        QMessageBox::warning(this, tr("PadForge"),
+                             tr("Cannot open the containing folder:\n%1").arg(dir));
+}
+
+void MainWindow::copyEditorPath(EditorWidget* editor) {
+    if (!editor || editor->filePath().isEmpty())
+        return;
+    QApplication::clipboard()->setText(editor->filePath());
+    showMessage(tr("Full path copied to clipboard."));
+}
+
+void MainWindow::closeDocumentRange(QTabWidget* tabs, int first, int last) {
+    if (!tabs)
+        return;
+    QList<EditorWidget*> doomed;
+    for (int i = first; i <= last; ++i) {
+        if (i < 0 || i >= tabs->count())
+            continue;
+        if (auto* editor = qobject_cast<EditorWidget*>(tabs->widget(i)))
+            doomed.append(editor);
+    }
+    for (EditorWidget* editor : doomed) {
+        if (tabWidgetFor(editor) != tabs)
+            continue;
+        const int before = m_editors.size();
+        closeEditor(editor);
+        if (m_editors.size() == before)
+            break; // the user cancelled
+    }
+}
+
+void MainWindow::closeOtherDocuments() {
+    EditorWidget* keep = currentEditor();
+    if (!keep)
+        return;
+    for (EditorWidget* editor : QList<EditorWidget*>(m_editors)) {
+        if (editor == keep)
+            continue;
+        const int before = m_editors.size();
+        closeEditor(editor);
+        if (m_editors.size() == before)
+            break; // the user cancelled
+    }
+}
+
+void MainWindow::closeAllDocuments() {
+    for (EditorWidget* editor : QList<EditorWidget*>(m_editors)) {
+        const int before = m_editors.size();
+        closeEditor(editor);
+        if (m_editors.size() == before)
+            break; // the user cancelled
+    }
+}
+
+void MainWindow::renameCurrentDocument(const QString& newPath) {
+    renameEditor(currentEditor(), newPath);
+}
+
+void MainWindow::showCurrentInFileManager() {
+    openContainingFolder(currentEditor());
+}
+
+void MainWindow::sortTabs(bool byPath) {
+    QTabWidget* tabs = m_activeTabs;
+    if (!tabs || tabs->count() < 2)
+        return;
+    EditorWidget* current = currentEditor();
+    QList<QPair<QString, EditorWidget*>> ordered;
+    for (int i = 0; i < tabs->count(); ++i) {
+        auto* editor = qobject_cast<EditorWidget*>(tabs->widget(i));
+        if (!editor)
+            continue;
+        const QString key = byPath ? editor->filePath() : tabs->tabText(i);
+        ordered.append({key.toLower(), editor});
+    }
+    std::stable_sort(ordered.begin(), ordered.end(),
+                     [](const QPair<QString, EditorWidget*>& a,
+                        const QPair<QString, EditorWidget*>& b) { return a.first < b.first; });
+    for (int target = 0; target < ordered.size(); ++target) {
+        const int from = tabs->indexOf(ordered.at(target).second);
+        if (from != target)
+            tabs->tabBar()->moveTab(from, target);
+    }
+    if (current)
+        tabs->setCurrentWidget(current);
+}
+
 void MainWindow::updateTabTitle(EditorWidget* editor) {
-    auto* tabs = qobject_cast<QTabWidget*>(editor->parentWidget());
+    auto* tabs = tabWidgetFor(editor);
     if (!tabs)
         return;
     const int index = tabs->indexOf(editor);
@@ -360,7 +629,7 @@ void MainWindow::closeEvent(QCloseEvent* event) {
     for (FloatingWindow* window : QList<FloatingWindow*>(m_floatingWindows))
         window->close();
     for (EditorWidget* editor : QList<EditorWidget*>(m_editors)) {
-        auto* tabs = qobject_cast<QTabWidget*>(editor->parentWidget());
+        auto* tabs = tabWidgetFor(editor);
         if (editor->isModified()) {
             if (tabs)
                 tabs->setCurrentWidget(editor);
@@ -542,6 +811,10 @@ void MainWindow::createMenus() {
     connect(aCopyName, &QAction::triggered, this, &MainWindow::copyFileName);
     QAction* aCopyPath = fileMenu->addAction(tr("Copy Full Pat&h"));
     connect(aCopyPath, &QAction::triggered, this, &MainWindow::copyFilePath);
+    QAction* aRename = fileMenu->addAction(tr("Rena&me..."));
+    connect(aRename, &QAction::triggered, this, [this]() { renameCurrentDocument(); });
+    QAction* aContaining = fileMenu->addAction(tr("Open Containing &Folder"));
+    connect(aContaining, &QAction::triggered, this, &MainWindow::showCurrentInFileManager);
     fileMenu->addSeparator();
 
     QMenu* exportMenu = fileMenu->addMenu(tr("&Export"));
@@ -556,6 +829,10 @@ void MainWindow::createMenus() {
     QAction* aClose = fileMenu->addAction(tr("&Close"));
     aClose->setShortcut(QKeySequence::Close);
     connect(aClose, &QAction::triggered, this, [this]() { closeEditor(currentEditor()); });
+    QAction* aCloseOthers = fileMenu->addAction(tr("Close All But &This"));
+    connect(aCloseOthers, &QAction::triggered, this, &MainWindow::closeOtherDocuments);
+    QAction* aCloseAll = fileMenu->addAction(tr("Clos&e All"));
+    connect(aCloseAll, &QAction::triggered, this, &MainWindow::closeAllDocuments);
     fileMenu->addSeparator();
 
     m_encodingMenu = fileMenu->addMenu(tr("&Encoding"));
@@ -1109,6 +1386,9 @@ void MainWindow::createMenus() {
     QAction* aPrevTab = m_windowMenu->addAction(tr("Previous Tab"));
     aPrevTab->setShortcut(QKeySequence(QStringLiteral("Ctrl+Shift+Tab")));
     connect(aPrevTab, &QAction::triggered, this, [this]() { nextTab(false); });
+    QMenu* sortTabsMenu = m_windowMenu->addMenu(tr("Sort Tabs"));
+    sortTabsMenu->addAction(tr("By Name"), this, [this]() { sortTabs(false); });
+    sortTabsMenu->addAction(tr("By Path"), this, [this]() { sortTabs(true); });
     m_windowMenu->addAction(m_actSplitView);
     m_windowMenu->addAction(aMoveView);
     m_windowMenu->addSeparator();
@@ -1286,7 +1566,7 @@ void MainWindow::saveAll() {
         if (!editor->isModified())
             continue;
         if (editor->filePath().isEmpty()) {
-            auto* tabs = qobject_cast<QTabWidget*>(editor->parentWidget());
+            auto* tabs = tabWidgetFor(editor);
             if (tabs)
                 tabs->setCurrentWidget(editor);
             const QString path = QFileDialog::getSaveFileName(this, tr("Save As"));
@@ -1300,13 +1580,7 @@ void MainWindow::saveAll() {
 }
 
 void MainWindow::reloadCurrent() {
-    EditorWidget* editor = currentEditor();
-    if (!editor || editor->filePath().isEmpty())
-        return;
-    const int line = editor->currentLine();
-    QString error;
-    editor->openFile(editor->filePath(), &error);
-    editor->gotoLine(line);
+    reloadEditor(currentEditor());
 }
 
 void MainWindow::setEncodingForCurrent(const EncodingInfo& encoding, bool reencode) {
@@ -1404,7 +1678,7 @@ void MainWindow::findAllInOpen(bool allDocuments) {
 void MainWindow::goToSearchResult(EditorWidget* editor, int line) {
     if (!editor)
         return;
-    auto* tabs = qobject_cast<QTabWidget*>(editor->parentWidget());
+    auto* tabs = tabWidgetFor(editor);
     if (tabs) {
         tabs->setCurrentWidget(editor);
         m_activeTabs = tabs;
@@ -1444,10 +1718,13 @@ void MainWindow::toggleSplitView(bool enabled) {
 }
 
 void MainWindow::moveToOtherView() {
-    EditorWidget* editor = currentEditor();
+    moveEditorToOtherView(currentEditor());
+}
+
+void MainWindow::moveEditorToOtherView(EditorWidget* editor) {
     if (!editor)
         return;
-    auto* from = qobject_cast<QTabWidget*>(editor->parentWidget());
+    auto* from = tabWidgetFor(editor);
     if (!from)
         return;
     QTabWidget* to = (from == m_mainTabs) ? m_subTabs : m_mainTabs;
@@ -1627,7 +1904,7 @@ void MainWindow::selectTabByNumber(int number) {
     if (number < 0 || number >= m_editors.size())
         return;
     EditorWidget* editor = m_editors.at(number);
-    auto* tabs = qobject_cast<QTabWidget*>(editor->parentWidget());
+    auto* tabs = tabWidgetFor(editor);
     if (!tabs)
         return;
     tabs->setCurrentWidget(editor);
@@ -1691,7 +1968,7 @@ void MainWindow::updateFunctionListSource() {
 }
 
 EditorWidget* MainWindow::otherViewEditor(EditorWidget* editor) const {
-    auto* tabs = qobject_cast<QTabWidget*>(editor->parentWidget());
+    auto* tabs = tabWidgetFor(editor);
     if (!tabs)
         return nullptr;
     QTabWidget* other = (tabs == m_mainTabs) ? m_subTabs : m_mainTabs;
@@ -1722,7 +1999,7 @@ void MainWindow::ensureSplitView() {
 }
 
 void MainWindow::moveEditorTo(EditorWidget* editor, QTabWidget* view) {
-    auto* from = qobject_cast<QTabWidget*>(editor->parentWidget());
+    auto* from = tabWidgetFor(editor);
     if (from == view) {
         view->setCurrentWidget(editor);
         m_activeTabs = view;
@@ -1884,7 +2161,7 @@ void MainWindow::offerRestoreBackups() {
 void MainWindow::reattachToMain(EditorWidget* editor) {
     if (!editor)
         return;
-    auto* from = qobject_cast<QTabWidget*>(editor->parentWidget());
+    auto* from = tabWidgetFor(editor);
     if (from)
         from->removeTab(from->indexOf(editor));
     m_mainTabs->addTab(editor, tr("Untitled"));
@@ -1900,7 +2177,7 @@ void MainWindow::detachCurrentToFloating() {
     EditorWidget* editor = currentEditor();
     if (!editor)
         return;
-    auto* from = qobject_cast<QTabWidget*>(editor->parentWidget());
+    auto* from = tabWidgetFor(editor);
     if (!from)
         return;
     auto* window = new FloatingWindow;
