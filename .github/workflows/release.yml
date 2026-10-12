@@ -1,0 +1,65 @@
+name: Publish Linux packages
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish Linux downloads
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake ninja-build g++ python3 curl dpkg-dev \
+            qt6-base-dev qt6-base-dev-tools qt6-5compat-dev \
+            libgl1-mesa-dev liblua5.4-dev
+
+      - name: Build and test
+        run: |
+          cmake -S . -B build-test -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DPADFORGE_BUILD_TESTS=ON \
+            -DPADFORGE_ENABLE_LUA=ON
+          cmake --build build-test --parallel
+          QT_QPA_PLATFORM=offscreen ctest --test-dir build-test --output-on-failure
+
+      - name: Build Debian package
+        run: |
+          ./packaging/deb/build-deb.sh
+          cp dist/padforge_*_amd64.deb dist/PadForge-amd64.deb
+
+      - name: Install AppImage build tools
+        run: |
+          mkdir -p "$RUNNER_TEMP/linuxdeploy"
+          curl -fL \
+            https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage \
+            -o "$RUNNER_TEMP/linuxdeploy/linuxdeploy"
+          curl -fL \
+            https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage \
+            -o "$RUNNER_TEMP/linuxdeploy/linuxdeploy-plugin-qt-x86_64.AppImage"
+          chmod +x "$RUNNER_TEMP/linuxdeploy/linuxdeploy" \
+            "$RUNNER_TEMP/linuxdeploy/linuxdeploy-plugin-qt-x86_64.AppImage"
+          echo "$RUNNER_TEMP/linuxdeploy" >> "$GITHUB_PATH"
+
+      - name: Build AppImage
+        run: APPIMAGE_EXTRACT_AND_RUN=1 QMAKE=/usr/bin/qmake6 ./packaging/appimage/build-appimage.sh
+
+      - name: Publish public release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            dist/PadForge-amd64.deb \
+            dist/PadForge-x86_64.AppImage \
+            --title "PadForge $GITHUB_REF_NAME" \
+            --generate-notes \
+            --verify-tag

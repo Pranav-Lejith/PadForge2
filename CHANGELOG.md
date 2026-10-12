@@ -154,5 +154,5 @@ Initial development release.
   AppImage and Flatpak, plus desktop entry, icon and AppStream metadata.
 - GitHub Actions CI covering the full build and the core-only build.
 
-[Unreleased]: https://github.com/padforge/padforge/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/padforge/padforge/releases/tag/v0.1.0
+[Unreleased]: https://github.com/Pranav-Lejith/PadForge2/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/Pranav-Lejith/PadForge2/releases/tag/v0.1.0

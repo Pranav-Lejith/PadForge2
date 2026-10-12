@@ -21,7 +21,7 @@ modules:
       - -DPADFORGE_BUILD_TESTS=OFF
     sources:
       - type: git
-        url: https://github.com/padforge/padforge.git
+        url: https://github.com/Pranav-Lejith/PadForge2.git
         tag: v0.1.0
     post-install:
       - install -d /app/share/PadForge/plugins

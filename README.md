@@ -23,9 +23,9 @@ PadForge brings the familiar, efficient editing experience popularised by Notepa
 - [Features](#features)
 - [Screenshots](#screenshots)
 - [Installation](#installation)
-  - [One-Line Install (Local)](#one-line-install-local)
-  - [Prebuilt Binaries](#prebuilt-binaries)
-  - [Package Managers](#package-managers)
+  - [AppImage](#appimage)
+  - [Debian and Ubuntu](#debian-and-ubuntu)
+  - [Build from Source](#build-from-source)
 - [Building from Source](#building-from-source)
 - [Usage](#usage)
 - [Testing](#testing)
@@ -99,82 +99,38 @@ PadForge brings the familiar, efficient editing experience popularised by Notepa
 
 ## Installation
 
-### One-Line Install (Local)
+The source repository and release downloads are public. **You do not need a
+GitHub account** to browse or download PadForge.
 
-Install the latest build to `~/.local/` with a single command:
+### AppImage
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/padforge/padforge/main/scripts/install-local.sh | bash
-```
-
-Or download and run manually:
-
-```bash
-git clone https://github.com/padforge/padforge.git && cd padforge && ./scripts/install-local.sh
-```
-
-This will install PadForge to `~/.local/bin/` and add the `.desktop` entry for app launchers.
-
-### Prebuilt Binaries
-
-Prebuilt binaries (AppImage, .deb, .rpm, .tar.gz) will be available on the [Releases](https://github.com/padforge/padforge/releases) page once published.
-
-**AppImage (Universal):**
+The AppImage is the easiest option on most Linux distributions. It bundles the
+application's Qt and Lua runtime libraries, so you do not need to install the
+build dependencies listed below. Download the latest public release, make it
+executable, and run it:
 
 ```bash
-curl -L -o PadForge-x86_64.AppImage https://github.com/padforge/padforge/releases/latest/download/PadForge-x86_64.AppImage
+curl -fL -o PadForge-x86_64.AppImage \
+  https://github.com/Pranav-Lejith/PadForge2/releases/latest/download/PadForge-x86_64.AppImage
 chmod +x PadForge-x86_64.AppImage
 ./PadForge-x86_64.AppImage
 ```
 
-### Package Managers
+### Debian and Ubuntu
 
-#### Arch Linux (pacman/AUR)
-
-**From source (PKGBUILD included):**
-
-```bash
-git clone https://github.com/padforge/padforge.git && cd padforge/packaging/arch && makepkg -si
-```
-
-**AUR** (coming soon): `paru -S padforge-git` or `yay -S padforge-git`
-
-#### Fedora / RHEL / openSUSE (DNF/RPM)
-
-Build the RPM locally:
+Download and install the `.deb` package. `apt` resolves and installs the
+required system libraries automatically:
 
 ```bash
-git clone https://github.com/padforge/padforge.git && cd padforge
-rpmbuild -ba packaging/rpm/padforge.spec
-sudo dnf install ~/rpmbuild/RPMS/x86_64/padforge-*.rpm
+curl -fL -o PadForge-amd64.deb \
+  https://github.com/Pranav-Lejith/PadForge2/releases/latest/download/PadForge-amd64.deb
+sudo apt install ./PadForge-amd64.deb
 ```
 
-COPR repository (coming soon for easier installation).
-
-#### Debian / Ubuntu (APT/DEB)
-
-Build and install the `.deb` package:
-
-```bash
-git clone https://github.com/padforge/padforge.git && cd padforge
-./packaging/deb/build-deb.sh
-sudo apt install ./dist/padforge_*_amd64.deb
-```
-
-#### Flatpak
-
-```bash
-flatpak-builder --user --install --force-clean build-flatpak \
-  packaging/flatpak/org.padforge.PadForge.yaml
-```
-
-#### Generic Tarball
-
-Download from [Releases](https://github.com/padforge/padforge/releases) and extract, or build:
-
-```bash
-cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release && cmake --build build && cd build && cpack -G TGZ
-```
+These are public release assets; opening the [releases page](https://github.com/Pranav-Lejith/PadForge2/releases/latest)
+does not require signing in. Building from source is for contributors and
+requires the development dependencies below. End users can use the AppImage or
+`.deb` instead.
 
 ## Building from Source
 
@@ -210,8 +166,8 @@ sudo pacman -S cmake ninja gcc python qt6-base qt6-5compat lua
 ### Build Steps
 
 ```bash
-git clone https://github.com/padforge/padforge.git
-cd padforge
+git clone https://github.com/Pranav-Lejith/PadForge2.git
+cd PadForge2
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DPADFORGE_ENABLE_LUA=ON -DPADFORGE_BUILD_TESTS=ON
 cmake --build build --parallel
 ```

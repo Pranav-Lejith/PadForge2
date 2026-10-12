@@ -1,8 +1,13 @@
 # Installing PadForge
 
-PadForge is currently distributed as source and through the packaging recipes in
-[`packaging`](../packaging). Pre-built packages will be attached to releases as
-the project matures.
+PadForge's source and release assets are public; a GitHub account is not needed
+to download them. For normal use, download the [AppImage](https://github.com/Pranav-Lejith/PadForge2/releases/latest/download/PadForge-x86_64.AppImage)
+or install the [Debian/Ubuntu package](https://github.com/Pranav-Lejith/PadForge2/releases/latest/download/PadForge-amd64.deb).
+The AppImage bundles the application libraries. Installing the `.deb` with
+`apt` automatically installs its declared system dependencies.
+
+Building a package from source is for contributors and requires the development
+dependencies listed below.
 
 ## Build from source
 
@@ -18,8 +23,8 @@ the project matures.
 ### 2. Configure and build
 
 ```sh
-git clone https://github.com/padforge/padforge.git
-cd padforge
+git clone https://github.com/Pranav-Lejith/PadForge2.git
+cd PadForge2
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build
 ```
@@ -41,10 +46,10 @@ AppStream metadata. Then launch **PadForge** from your application menu or run
 
 See [`packaging/README.md`](../packaging/README.md). In short:
 
-- **Arch**: `cd packaging/arch && makepkg -si`
-- **Fedora/RHEL/openSUSE**: `rpmbuild -ba packaging/rpm/padforge.spec`
-- **Debian/Ubuntu**: `packaging/deb/build-deb.sh` then `apt install ./dist/*.deb`
-- **AppImage**: `packaging/appimage/build-appimage.sh`
+- **Arch**: `cd packaging/arch && makepkg -si` (builds from source)
+- **Fedora/RHEL/openSUSE**: `rpmbuild -ba packaging/rpm/padforge.spec` (builds from source)
+- **Debian/Ubuntu**: `packaging/deb/build-deb.sh` (builds from source)
+- **AppImage**: `packaging/appimage/build-appimage.sh` (builds from source)
 - **Flatpak**: `flatpak-builder --user --install --force-clean build-flatpak packaging/flatpak/org.padforge.PadForge.yaml`
 
 ## Verifying the build

@@ -1,5 +1,10 @@
 # Packaging PadForge
 
+PadForge's public release downloads do not require a GitHub account. The
+AppImage bundles its application libraries; installing the released `.deb`
+through `apt` installs its declared dependencies automatically. These recipes
+are for maintainers building packages from source.
+
 PadForge uses a standard CMake install layout:
 
 | Path | Contents |

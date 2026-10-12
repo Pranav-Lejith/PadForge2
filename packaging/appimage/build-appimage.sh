@@ -2,7 +2,7 @@
 #
 # Build a portable AppImage for PadForge.
 #
-#   packaging/appimage/AppRun-build.sh
+#   packaging/appimage/build-appimage.sh
 #
 # Requires: cmake, ninja, a C++ toolchain, Qt 6 dev files, and linuxdeploy plus
 # the linuxdeploy Qt plugin (https://github.com/linuxdeploy). Set
@@ -29,7 +29,7 @@ chmod +x "${appdir}/AppRun"
 mkdir -p "${appdir}/usr/share/PadForge/plugins"
 cp -r "${repo_root}/plugins/lua/." "${appdir}/usr/share/PadForge/plugins/"
 
-export OUTPUT="${repo_root}/dist/PadForge-x86_64.AppImage"
+export LDAI_OUTPUT="${repo_root}/dist/PadForge-x86_64.AppImage"
 export QMAKE="${QMAKE:-$(command -v qmake6 || command -v qmake)}"
 mkdir -p "${repo_root}/dist"
 
@@ -39,4 +39,4 @@ linuxdeploy --appdir "${appdir}" \
     --icon-file "${appdir}/usr/share/icons/hicolor/scalable/apps/org.padforge.PadForge.svg" \
     --output appimage
 
-echo "Built ${OUTPUT}"
+echo "Built ${LDAI_OUTPUT}"

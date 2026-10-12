@@ -2,7 +2,7 @@
 # Install PadForge locally to ~/.local
 set -euo pipefail
 
-REPO="${REPO:-https://github.com/padforge/padforge.git}"
+REPO="${REPO:-https://github.com/Pranav-Lejith/PadForge2.git}"
 BUILD_DIR="build-install"
 PREFIX="${PREFIX:-$HOME/.local}"
 

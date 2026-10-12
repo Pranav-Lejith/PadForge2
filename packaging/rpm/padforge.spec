@@ -4,7 +4,7 @@ Release:        1%{?dist}
 Summary:        Fast native text editor with a Notepad++-style workflow
 
 License:        GPL-3.0-or-later
-URL:            https://github.com/padforge/padforge
+URL:            https://github.com/Pranav-Lejith/PadForge2
 Source0:        %{name}-%{version}.tar.gz
 
 BuildRequires:  cmake

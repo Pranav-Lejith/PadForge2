@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.21)
 project(PadForge
     VERSION 0.1.0
     DESCRIPTION "A fast native Linux text editor with a Notepad++-style workflow"
-    HOMEPAGE_URL "https://github.com/padforge/padforge"
+    HOMEPAGE_URL "https://github.com/Pranav-Lejith/PadForge2"
     LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
