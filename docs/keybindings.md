@@ -11,6 +11,7 @@ PadForge follows the familiar Notepad++/desktop editor conventions.
 | `Ctrl+S` | Save |
 | `Ctrl+Shift+S` | Save as |
 | `Ctrl+W` | Close current document |
+| `Ctrl+P` | Print |
 | `Ctrl+Q` | Quit |
 
 ## Editing
@@ -63,6 +64,7 @@ PadForge follows the familiar Notepad++/desktop editor conventions.
 | `Ctrl+Tab` | Next tab |
 | `Ctrl+Shift+Tab` | Previous tab |
 | `Alt+1`..`Alt+9` | Jump to document 1..9 |
+| `Ctrl+Alt+D` | Detach current tab to floating window |
 
 ## Tools
 

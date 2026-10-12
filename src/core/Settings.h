@@ -22,6 +22,7 @@ struct AppSettings {
     bool highlightCurrentLine = true;
     bool autoCompletion = true;
     bool autoCloseBrackets = true;
+    bool showChangeHistory = true;
 
     int edgeColumn = 0;       // 0 disables the edge line
     int splitOrientation = 0; // 0 = horizontal, 1 = vertical

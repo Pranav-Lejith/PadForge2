@@ -1,3 +1,5 @@
+find_package(Qt6 REQUIRED COMPONENTS PrintSupport)
+
 add_library(padforge_gui STATIC
     MainWindow.cpp
     MainWindow.h
@@ -16,10 +18,17 @@ add_library(padforge_gui STATIC
     DocumentSummaryDialog.cpp
     DocumentSummaryDialog.h
     RunDialog.cpp
-    RunDialog.h)
+    RunDialog.h
+    ExplorerPanel.cpp
+    ExplorerPanel.h
+    DocumentMap.cpp
+    DocumentMap.h
+    FloatingWindow.cpp
+    FloatingWindow.h)
 
 target_include_directories(padforge_gui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
-target_link_libraries(padforge_gui PUBLIC padforge_core PadForge::scintilla PadForge::lexilla Qt6::Widgets)
+target_link_libraries(padforge_gui PUBLIC padforge_core PadForge::scintilla PadForge::lexilla
+    Qt6::Widgets Qt6::PrintSupport)
 target_compile_definitions(padforge_gui PUBLIC SCINTILLA_QT=1)
 
 add_executable(padforge main.cpp)

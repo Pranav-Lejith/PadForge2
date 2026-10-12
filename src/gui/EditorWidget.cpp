@@ -8,12 +8,18 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QContextMenuEvent>
+#include <QDateTime>
 #include <QFile>
 #include <QFileInfo>
 #include <QMenu>
 #include <QRegularExpression>
 #include <QSet>
 #include <QString>
+#include <QTextBlockFormat>
+#include <QTextCharFormat>
+#include <QTextCursor>
+#include <QTextDocument>
+#include <QUuid>
 #include <QVBoxLayout>
 #include <Scintilla.h>
 #include <ScintillaEdit.h>
@@ -56,6 +62,26 @@ QString normalizedLineEndings(const QString& text) {
     QString out = text;
     out.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
     out.replace(QChar('\r'), QChar('\n'));
+    return out;
+}
+
+QString escapeRtf(const QString& text) {
+    QString out;
+    out.reserve(text.size());
+    for (const QChar c : text) {
+        const ushort u = c.unicode();
+        if (c == QLatin1Char('\\')) {
+            out += QStringLiteral("\\\\");
+        } else if (c == QLatin1Char('{')) {
+            out += QStringLiteral("\\{");
+        } else if (c == QLatin1Char('}')) {
+            out += QStringLiteral("\\}");
+        } else if (u < 0x80) {
+            out += c;
+        } else {
+            out += QStringLiteral("\\u%1?").arg(static_cast<short>(u));
+        }
+    }
     return out;
 }
 
@@ -131,6 +157,7 @@ void EditorWidget::configureEditor() {
     m_editor->send(SCI_SETADDITIONALSELECTIONTYPING, 1);
     m_editor->send(SCI_SETMULTIPASTE, SC_MULTIPASTE_EACH);
     m_editor->send(SCI_SETRECTANGULARSELECTIONMODIFIER, SCMOD_ALT);
+    m_editor->send(SCI_SETCHANGEHISTORY, SC_CHANGE_HISTORY_INDICATORS);
 }
 
 void EditorWidget::configureMargins() {
@@ -242,11 +269,250 @@ void EditorWidget::applyTheme(const Theme& theme) {
     m_editor->send(SCI_INDICSETSTYLE, kSmartIndicator, INDIC_ROUNDBOX);
     m_editor->send(SCI_INDICSETFORE, kSmartIndicator, sciColor(QColor("#ffd24a")));
 
+    // Scintilla change-history indicators (36..43):
+    // even numbers are insertions, odd numbers are deletions.
+    for (int i = 0; i < 8; ++i) {
+        const int indicator = 36 + i;
+        m_editor->send(SCI_INDICSETSTYLE, uptr_t(indicator), INDIC_STRAIGHTBOX);
+        m_editor->send(SCI_INDICSETFORE, uptr_t(indicator),
+                       sciColor((i % 2 == 0) ? QColor("#43a047") : QColor("#e53935")));
+    }
+
     m_editor->send(SCI_COLOURISE, 0, -1);
 }
 
 void EditorWidget::setZoom(int points) {
     m_editor->send(SCI_SETZOOM, uptr_t(points));
+}
+
+QColor EditorWidget::colorForLine(int zeroBasedLine) const {
+    const int pos = int(m_editor->send(SCI_POSITIONFROMLINE, uptr_t(zeroBasedLine)));
+    if (pos < 0)
+        return documentBackground();
+    const int style = int(m_editor->send(SCI_GETSTYLEAT, uptr_t(pos)));
+    return colorForStyle(style);
+}
+
+QColor EditorWidget::documentBackground() const {
+    return ThemeManager::current().background;
+}
+
+int EditorWidget::firstVisibleLine() const {
+    return int(m_editor->send(SCI_GETFIRSTVISIBLELINE));
+}
+
+int EditorWidget::linesOnScreen() const {
+    return int(m_editor->send(SCI_LINESONSCREEN));
+}
+
+QList<EditorWidget::StyledRun> EditorWidget::styledRuns(int start, int end) const {
+    QList<StyledRun> runs;
+    const int length = end - start;
+    if (length <= 0)
+        return runs;
+    std::vector<char> buffer(2u * length + 2u);
+    Sci_TextRange range;
+    range.chrg.cpMin = start;
+    range.chrg.cpMax = end;
+    range.lpstrText = buffer.data();
+    m_editor->send(SCI_GETSTYLEDTEXT, 0, reinterpret_cast<sptr_t>(&range));
+    int currentStyle = -1;
+    int runStart = 0;
+    for (int i = 0; i < length; ++i) {
+        const int style = static_cast<unsigned char>(buffer[2u * i + 1]) & 0xFF;
+        if (style != currentStyle) {
+            if (currentStyle >= 0)
+                runs.append({start + runStart, i - runStart, currentStyle});
+            currentStyle = style;
+            runStart = i;
+        }
+    }
+    if (currentStyle >= 0)
+        runs.append({start + runStart, length - runStart, currentStyle});
+    return runs;
+}
+
+QColor EditorWidget::colorForStyle(int style) const {
+    const Language* language = LanguageManager::byId(m_languageId);
+    const QString lexer = language ? language->lexer : QStringLiteral("null");
+    return ThemeManager::current().colorFor(lexer, style);
+}
+
+bool EditorWidget::boldForStyle(int style) const {
+    const Language* language = LanguageManager::byId(m_languageId);
+    const QString lexer = language ? language->lexer : QStringLiteral("null");
+    return ThemeManager::current().boldFor(lexer, style);
+}
+
+bool EditorWidget::italicForStyle(int style) const {
+    const Language* language = LanguageManager::byId(m_languageId);
+    const QString lexer = language ? language->lexer : QStringLiteral("null");
+    return ThemeManager::current().italicFor(lexer, style);
+}
+
+void EditorWidget::setChangeHistoryEnabled(bool enabled) {
+    m_editor->send(SCI_SETCHANGEHISTORY,
+                   enabled ? SC_CHANGE_HISTORY_INDICATORS : SC_CHANGE_HISTORY_DISABLED);
+}
+
+void EditorWidget::insertDateTime(const QString& format) {
+    const QString text = QDateTime::currentDateTime().toString(format);
+    if (!text.isEmpty())
+        insertTextAtCursor(text);
+}
+
+void EditorWidget::insertGuid(GuidFormat format) {
+    const QUuid id = QUuid::createUuid();
+    QString text = id.toString(QUuid::WithoutBraces);
+    switch (format) {
+    case GuidFormat::Lower:
+        break;
+    case GuidFormat::Upper:
+        text = text.toUpper();
+        break;
+    case GuidFormat::BracesUpper:
+        text = QLatin1Char('{') + text.toUpper() + QLatin1Char('}');
+        break;
+    case GuidFormat::Plain:
+        text = text.toUpper().remove(QLatin1Char('-'));
+        break;
+    case GuidFormat::Compact:
+        text = text.remove(QLatin1Char('-'));
+        break;
+    }
+    insertTextAtCursor(text);
+}
+
+void EditorWidget::insertTextAtCursor(const QString& text) {
+    const QByteArray utf8 = text.toUtf8();
+    m_editor->send(SCI_REPLACESEL, 0, reinterpret_cast<sptr_t>(utf8.constData()));
+}
+
+QString EditorWidget::exportHtml() const {
+    const QString title = m_filePath.isEmpty() ? tr("Untitled") : m_filePath;
+    const Theme& theme = ThemeManager::current();
+    QString html;
+    html += QStringLiteral(
+                "<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n<title>%1</title>\n"
+                "<style>\nbody { background-color: %2; color: %3; font-family: %4, monospace; "
+                "font-size: %5pt; }\npre { margin: 0; }\n</style>\n</head>\n<body>\n<pre>")
+                .arg(title.toHtmlEscaped(), theme.background.name(), theme.foreground.name(),
+                     m_fontFamily)
+                .arg(m_fontSize);
+
+    const int length = int(m_editor->send(SCI_GETLENGTH));
+    const int defaultStyleColor = sciColor(theme.foreground);
+    for (const StyledRun& run : styledRuns(0, length)) {
+        const QColor color = colorForStyle(run.style);
+        const bool bold = boldForStyle(run.style);
+        const bool italic = italicForStyle(run.style);
+        QString text = QString::fromUtf8(m_editor->textRange(run.start, run.start + run.length))
+                           .toHtmlEscaped();
+        text.replace(QLatin1Char('\n'), QStringLiteral("<br>\n"));
+        QString css;
+        if (sciColor(color) != defaultStyleColor)
+            css += QStringLiteral("color:%1;").arg(color.name());
+        if (bold)
+            css += QStringLiteral("font-weight:bold;");
+        if (italic)
+            css += QStringLiteral("font-style:italic;");
+        if (css.isEmpty()) {
+            html += text;
+        } else {
+            css.chop(1); // strip trailing ';'
+            html += QStringLiteral("<span style=\"%1\">%2</span>").arg(css, text);
+        }
+    }
+    html += QStringLiteral("\n</pre>\n</body>\n</html>\n");
+    return html;
+}
+
+QString EditorWidget::exportRtf() const {
+    const int length = int(m_editor->send(SCI_GETLENGTH));
+    const QList<StyledRun> runs = styledRuns(0, length);
+
+    struct ColorEntry {
+        QColor color;
+        int index;
+    };
+    QList<ColorEntry> palette;
+    auto colorIndex = [&palette](const QColor& color) {
+        for (const ColorEntry& entry : palette) {
+            if (entry.color == color)
+                return entry.index;
+        }
+        palette.append({color, palette.size() + 1}); // index 0 is reserved for auto
+        return palette.last().index;
+    };
+    for (const StyledRun& run : runs)
+        colorIndex(colorForStyle(run.style));
+
+    QString out;
+    out += QStringLiteral("{\\rtf1\\ansi\\deff0");
+    QString rtfFont = m_fontFamily;
+    rtfFont.replace(QLatin1Char(' '), QStringLiteral("~"));
+    out += QStringLiteral("{\\fonttbl{\\f0 %1;}}").arg(rtfFont);
+    out += QStringLiteral("{\\colortbl");
+    for (const ColorEntry& entry : palette) {
+        out += QStringLiteral("\\red%1\\green%2\\blue%3;")
+                   .arg(entry.color.red())
+                   .arg(entry.color.green())
+                   .arg(entry.color.blue());
+    }
+    out += QStringLiteral("}");
+
+    const int defaultColorIndex = colorIndex(ThemeManager::current().foreground);
+    out += QStringLiteral("\\f0\\fs%1").arg(m_fontSize * 2);
+
+    for (const StyledRun& run : runs) {
+        const int index = colorIndex(colorForStyle(run.style));
+        const bool bold = boldForStyle(run.style);
+        const bool italic = italicForStyle(run.style);
+        QString text =
+            escapeRtf(QString::fromUtf8(m_editor->textRange(run.start, run.start + run.length)));
+        text.replace(QLatin1Char('\n'), QStringLiteral("\\par "));
+        QString control = QStringLiteral(" ");
+        if (index != defaultColorIndex)
+            control += QStringLiteral("\\cf%1").arg(index);
+        if (bold)
+            control += QStringLiteral("\\b");
+        if (italic)
+            control += QStringLiteral("\\i");
+        out += control + text;
+        if (bold)
+            out += QStringLiteral("\\b0");
+        if (italic)
+            out += QStringLiteral("\\i0");
+    }
+    out += QStringLiteral("\\par\n}");
+    return out;
+}
+
+QTextDocument* EditorWidget::printDocument() const {
+    auto* doc = new QTextDocument;
+    QTextCursor cursor(doc);
+    const int length = int(m_editor->send(SCI_GETLENGTH));
+    const int defaultStyleColor = sciColor(ThemeManager::current().foreground);
+    QTextCharFormat plain;
+    plain.setFontFamily(m_fontFamily);
+    plain.setFontPointSize(m_fontSize);
+    for (const StyledRun& run : styledRuns(0, length)) {
+        const QColor color = colorForStyle(run.style);
+        const bool bold = boldForStyle(run.style);
+        const bool italic = italicForStyle(run.style);
+        if (sciColor(color) == defaultStyleColor && !bold && !italic) {
+            cursor.insertText(m_editor->textRange(run.start, run.start + run.length), plain);
+            continue;
+        }
+        QTextCharFormat format = plain;
+        format.setForeground(color);
+        if (bold)
+            format.setFontWeight(QFont::Bold);
+        if (italic)
+            format.setFontItalic(true);
+        cursor.insertText(m_editor->textRange(run.start, run.start + run.length), format);
+    }
+    return doc;
 }
 
 QString EditorWidget::documentText() const {
@@ -796,6 +1062,7 @@ void EditorWidget::applySettings(const AppSettings& settings) {
     setUseTabs(settings.tabMode == QStringLiteral("tabs"));
     setHighlightCurrentLine(settings.highlightCurrentLine);
     setAutoCloseBrackets(settings.autoCloseBrackets);
+    setChangeHistoryEnabled(settings.showChangeHistory);
     m_wordCompletionOn = settings.autoCompletion;
 }
 

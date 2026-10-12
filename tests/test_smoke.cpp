@@ -7,8 +7,10 @@
 #include <QClipboard>
 #include <QFile>
 #include <QGuiApplication>
+#include <QRegularExpression>
 #include <QTemporaryDir>
 #include <QtTest>
+#include <Scintilla.h>
 #include <ScintillaEdit.h>
 
 using namespace PadForge;
@@ -23,6 +25,7 @@ private slots:
     void mainWindowOpensPath();
     void editorTransformations();
     void bookmarkOperations();
+    void exportAndInsertOperations();
 };
 
 void SmokeTest::newDocumentHoldsText() {
@@ -123,6 +126,48 @@ void SmokeTest::bookmarkOperations() {
     QCOMPARE(QGuiApplication::clipboard()->text(), QStringLiteral("y\nz\n"));
     editor.invertBookmarks();
     QCOMPARE(editor.bookmarkLines(), QList<int>({0}));
+}
+
+void SmokeTest::exportAndInsertOperations() {
+    EditorWidget editor;
+    editor.setDocumentText(QStringLiteral("int x = 1; // <tag>\n"));
+    editor.setLanguage(QStringLiteral("cpp"));
+
+    const QString html = editor.exportHtml();
+    QVERIFY(html.contains(QStringLiteral("<html>")));
+    QVERIFY(html.contains(QStringLiteral("&lt;tag&gt;")));
+    QVERIFY(html.contains(QStringLiteral("background-color:")));
+    QVERIFY(html.contains(QStringLiteral("<span")));
+
+    const QString rtf = editor.exportRtf();
+    QVERIFY(rtf.startsWith(QStringLiteral("{\\rtf1")));
+    QVERIFY(rtf.contains(QStringLiteral("\\par")));
+
+    QCOMPARE(editor.editor()->send(SCI_GETCHANGEHISTORY), SC_CHANGE_HISTORY_INDICATORS);
+    editor.setChangeHistoryEnabled(false);
+    QCOMPARE(editor.editor()->send(SCI_GETCHANGEHISTORY), SC_CHANGE_HISTORY_DISABLED);
+    editor.setChangeHistoryEnabled(true);
+
+    editor.setDocumentText(QStringLiteral("|"));
+    editor.gotoLine(1);
+    editor.insertDateTime(QStringLiteral("yyyy-MM-dd"));
+    QVERIFY(QRegularExpression(QStringLiteral("\\d{4}-\\d{2}-\\d{2}\\|"))
+                .match(editor.documentText())
+                .hasMatch());
+
+    editor.setDocumentText(QString());
+    editor.insertGuid(GuidFormat::Upper);
+    QCOMPARE(editor.documentText().size(), 36);
+    QCOMPARE(editor.documentText(), editor.documentText().toUpper());
+
+    editor.setDocumentText(QString());
+    editor.insertGuid(GuidFormat::BracesUpper);
+    QVERIFY(editor.documentText().startsWith(QLatin1Char('{')));
+    QVERIFY(editor.documentText().endsWith(QLatin1Char('}')));
+
+    editor.setDocumentText(QString());
+    editor.insertGuid(GuidFormat::Compact);
+    QCOMPARE(editor.documentText().size(), 32);
 }
 
 QTEST_MAIN(SmokeTest)

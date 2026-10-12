@@ -1,11 +1,14 @@
 #include "MainWindow.h"
 
 #include "ColumnEditorDialog.h"
+#include "DocumentMap.h"
 #include "DocumentSummaryDialog.h"
 #include "EditorWidget.h"
 #include "Encoding.h"
+#include "ExplorerPanel.h"
 #include "FindInFilesPanel.h"
 #include "FindReplaceDialog.h"
+#include "FloatingWindow.h"
 #include "GotoLineDialog.h"
 #include "LanguageManager.h"
 #include "PreferencesDialog.h"
@@ -21,6 +24,7 @@
 #include <QDialog>
 #include <QDir>
 #include <QDockWidget>
+#include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QInputDialog>
@@ -30,10 +34,14 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QPrintDialog>
+#include <QPrintPreviewDialog>
+#include <QPrinter>
 #include <QSplitter>
 #include <QStandardPaths>
 #include <QStatusBar>
 #include <QTabWidget>
+#include <QTextDocument>
 #include <QToolBar>
 #include <Scintilla.h>
 #include <ScintillaEdit.h>
@@ -83,6 +91,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
         updateWindowTitle();
         updateStatus();
         updateWindowMenu();
+        updateLanguageMenu();
+        updateDocumentMapSource();
     });
     connect(m_subTabs, &QTabWidget::currentChanged, this, [this](int) {
         if (m_subTabs->currentWidget())
@@ -90,6 +100,8 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
         updateWindowTitle();
         updateStatus();
         updateWindowMenu();
+        updateLanguageMenu();
+        updateDocumentMapSource();
     });
     connect(m_mainTabs, &QTabWidget::tabCloseRequested, this, [this](int index) {
         closeEditor(qobject_cast<EditorWidget*>(m_mainTabs->widget(index)));
@@ -111,10 +123,10 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     m_pluginHost = new PluginHost(this);
 
     createActions();
+    createDocks();
     createMenus();
     createToolbar();
     createStatusBar();
-    createDocks();
     createPluginMenu();
 
     loadMacros();
@@ -164,6 +176,8 @@ void MainWindow::registerEditor(EditorWidget* editor) {
             addRecent(path);
         if (editor == currentEditor())
             updateWindowTitle();
+        if (m_explorerPanel && m_explorerPanel->isFollowing())
+            m_explorerPanel->revealPath(path);
     });
     connect(editor, &EditorWidget::cursorPositionChanged, this, [this, editor](int, int) {
         if (editor == currentEditor())
@@ -172,6 +186,7 @@ void MainWindow::registerEditor(EditorWidget* editor) {
     connect(editor, &EditorWidget::languageChanged, this, [this, editor](const QString&) {
         if (editor == currentEditor())
             updateStatus();
+        updateLanguageMenu();
     });
     connect(editor, &EditorWidget::encodingChanged, this, [this, editor]() {
         if (editor == currentEditor())
@@ -306,6 +321,8 @@ void MainWindow::updateStatus() {
 }
 
 void MainWindow::closeEvent(QCloseEvent* event) {
+    for (FloatingWindow* window : QList<FloatingWindow*>(m_floatingWindows))
+        window->close();
     for (EditorWidget* editor : QList<EditorWidget*>(m_editors)) {
         auto* tabs = qobject_cast<QTabWidget*>(editor->parentWidget());
         if (editor->isModified()) {
@@ -458,6 +475,8 @@ void MainWindow::createMenus() {
     QAction* aOpen = fileMenu->addAction(tr("&Open..."));
     aOpen->setShortcut(QKeySequence::Open);
     connect(aOpen, &QAction::triggered, this, &MainWindow::openFilesDialog);
+    QAction* aOpenFolder = fileMenu->addAction(tr("Open &Folder..."));
+    connect(aOpenFolder, &QAction::triggered, this, &MainWindow::openFolderDialog);
 
     m_recentMenu = fileMenu->addMenu(tr("Open &Recent"));
     m_recentMenu->setObjectName(QStringLiteral("recentMenu"));
@@ -472,6 +491,16 @@ void MainWindow::createMenus() {
     connect(aSaveAll, &QAction::triggered, this, &MainWindow::saveAll);
     QAction* aReload = fileMenu->addAction(tr("Re&load from Disk"));
     connect(aReload, &QAction::triggered, this, &MainWindow::reloadCurrent);
+
+    QMenu* exportMenu = fileMenu->addMenu(tr("&Export"));
+    exportMenu->addAction(tr("&HTML..."), this, &MainWindow::exportCurrentHtml);
+    exportMenu->addAction(tr("&RTF..."), this, &MainWindow::exportCurrentRtf);
+    QAction* aPrint = fileMenu->addAction(tr("&Print..."));
+    aPrint->setShortcut(QKeySequence::Print);
+    connect(aPrint, &QAction::triggered, this, [this]() { printCurrent(false); });
+    QAction* aPrintPreview = fileMenu->addAction(tr("Print Pre&view..."));
+    connect(aPrintPreview, &QAction::triggered, this, [this]() { printCurrent(true); });
+
     QAction* aClose = fileMenu->addAction(tr("&Close"));
     aClose->setShortcut(QKeySequence::Close);
     connect(aClose, &QAction::triggered, this, [this]() { closeEditor(currentEditor()); });
@@ -745,6 +774,30 @@ void MainWindow::createMenus() {
     viewMenu->addAction(m_actShowEol);
     viewMenu->addAction(m_actShowIndentGuides);
     viewMenu->addAction(m_actHighlightLine);
+    viewMenu->addSeparator();
+    QAction* aExplorer = viewMenu->addAction(tr("E&xplorer"));
+    aExplorer->setCheckable(true);
+    connect(aExplorer, &QAction::toggled, this, [this](bool on) {
+        if (on) {
+            m_explorerDock->show();
+            m_explorerDock->raise();
+        } else {
+            m_explorerDock->hide();
+        }
+    });
+    connect(m_explorerDock, &QDockWidget::visibilityChanged, aExplorer, &QAction::setChecked);
+    QAction* aDocMap = viewMenu->addAction(tr("Document &Map"));
+    aDocMap->setCheckable(true);
+    connect(aDocMap, &QAction::toggled, this, [this](bool on) {
+        if (on) {
+            m_mapDock->show();
+            m_mapDock->raise();
+        } else {
+            m_mapDock->hide();
+        }
+    });
+    connect(m_mapDock, &QDockWidget::visibilityChanged, aDocMap, &QAction::setChecked);
+    viewMenu->addSeparator();
     QAction* aMoveView = viewMenu->addAction(tr("Move to Other View"));
     connect(aMoveView, &QAction::triggered, this, &MainWindow::moveToOtherView);
     viewMenu->addSeparator();
@@ -787,11 +840,71 @@ void MainWindow::createMenus() {
     m_languageMenu->addSeparator();
     for (const Language& language : LanguageManager::languages()) {
         const QString id = language.id;
-        m_languageMenu->addAction(language.name, this, [this, id]() {
+        QAction* action = m_languageMenu->addAction(language.name);
+        action->setCheckable(true);
+        action->setData(id);
+        connect(action, &QAction::triggered, this, [this, id]() {
             if (EditorWidget* editor = currentEditor())
                 editor->setLanguage(id);
         });
+        m_languageActions.append(action);
     }
+
+    QMenu* insertMenu = bar->addMenu(tr("&Insert"));
+    auto insertDateTimeFormat = [this](const QString& format) {
+        if (EditorWidget* editor = currentEditor())
+            editor->insertDateTime(format);
+    };
+    auto* dateTimeMenu = insertMenu->addMenu(tr("Date and &Time"));
+    dateTimeMenu->addAction(
+        tr("Date and Time (yyyy-MM-dd HH:mm:ss)"), this,
+        [insertDateTimeFormat]() { insertDateTimeFormat(QStringLiteral("yyyy-MM-dd HH:mm:ss")); });
+    dateTimeMenu->addAction(tr("Date (yyyy-MM-dd)"), this, [insertDateTimeFormat]() {
+        insertDateTimeFormat(QStringLiteral("yyyy-MM-dd"));
+    });
+    dateTimeMenu->addAction(tr("Time (HH:mm:ss)"), this, [insertDateTimeFormat]() {
+        insertDateTimeFormat(QStringLiteral("HH:mm:ss"));
+    });
+    auto* guidMenu = insertMenu->addMenu(tr("&GUID"));
+    guidMenu->addAction(tr("GUID (lower case)"), this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->insertGuid(GuidFormat::Lower);
+    });
+    guidMenu->addAction(tr("GUID (upper case)"), this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->insertGuid(GuidFormat::Upper);
+    });
+    guidMenu->addAction(tr("GUID (braces, upper case)"), this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->insertGuid(GuidFormat::BracesUpper);
+    });
+    guidMenu->addAction(tr("GUID (plain, upper case)"), this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->insertGuid(GuidFormat::Plain);
+    });
+    guidMenu->addAction(tr("GUID (compact)"), this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->insertGuid(GuidFormat::Compact);
+    });
+    insertMenu->addSeparator();
+    insertMenu->addAction(tr("File &Name"), this, [this]() {
+        if (EditorWidget* editor = currentEditor()) {
+            if (editor->filePath().isEmpty()) {
+                showMessage(tr("The current document has no file name."));
+                return;
+            }
+            editor->insertTextAtCursor(QFileInfo(editor->filePath()).fileName());
+        }
+    });
+    insertMenu->addAction(tr("Full &Path"), this, [this]() {
+        if (EditorWidget* editor = currentEditor()) {
+            if (editor->filePath().isEmpty()) {
+                showMessage(tr("The current document has no file path."));
+                return;
+            }
+            editor->insertTextAtCursor(editor->filePath());
+        }
+    });
 
     QMenu* settingsMenu = bar->addMenu(tr("&Settings"));
     QAction* aRun = settingsMenu->addAction(tr("&Run..."));
@@ -812,7 +925,14 @@ void MainWindow::createMenus() {
     m_windowMenu->addAction(m_actSplitView);
     m_windowMenu->addAction(aMoveView);
     m_windowMenu->addSeparator();
+    QAction* aDetach = m_windowMenu->addAction(tr("Detach Current Tab to Floating Window"));
+    aDetach->setShortcut(QKeySequence(QStringLiteral("Ctrl+Alt+D")));
+    connect(aDetach, &QAction::triggered, this, &MainWindow::detachCurrentToFloating);
+    QAction* aMergeWindows = m_windowMenu->addAction(tr("Merge All Floating Windows"));
+    connect(aMergeWindows, &QAction::triggered, this, &MainWindow::mergeFloatingWindows);
+    m_windowMenu->addSeparator();
     updateWindowMenu();
+    updateLanguageMenu();
 
     QMenu* helpMenu = bar->addMenu(tr("&Help"));
     QAction* aAbout = helpMenu->addAction(tr("&About PadForge"));
@@ -847,6 +967,15 @@ void MainWindow::createStatusBar() {
 }
 
 void MainWindow::createDocks() {
+    m_explorerPanel = new ExplorerPanel(this);
+    m_explorerDock = new QDockWidget(tr("Explorer"), this);
+    m_explorerDock->setObjectName(QStringLiteral("explorerDock"));
+    m_explorerDock->setWidget(m_explorerPanel);
+    addDockWidget(Qt::LeftDockWidgetArea, m_explorerDock);
+    m_explorerDock->hide();
+    connect(m_explorerPanel, &ExplorerPanel::fileActivated, this,
+            [this](const QString& path) { openPath(path); });
+
     m_findInFilesPanel = new FindInFilesPanel(this);
     m_findDock = new QDockWidget(tr("Find in Files"), this);
     m_findDock->setObjectName(QStringLiteral("findInFilesDock"));
@@ -854,6 +983,19 @@ void MainWindow::createDocks() {
     addDockWidget(Qt::RightDockWidgetArea, m_findDock);
     m_findDock->hide();
     connect(m_findInFilesPanel, &FindInFilesPanel::resultActivated, this, &MainWindow::gotoResult);
+
+    m_documentMap = new DocumentMap(this);
+    m_mapDock = new QDockWidget(tr("Document Map"), this);
+    m_mapDock->setObjectName(QStringLiteral("documentMapDock"));
+    m_mapDock->setWidget(m_documentMap);
+    addDockWidget(Qt::RightDockWidgetArea, m_mapDock);
+    m_mapDock->hide();
+    connect(m_mapDock, &QDockWidget::visibilityChanged, this, [this](bool visible) {
+        if (visible)
+            updateDocumentMapSource();
+        else
+            m_documentMap->detachEditor();
+    });
 }
 
 void MainWindow::createPluginMenu() {
@@ -1229,6 +1371,142 @@ void MainWindow::updateWindowMenu() {
         connect(action, &QAction::triggered, this, [this, index]() { selectTabByNumber(index); });
         m_windowMenu->addAction(action);
     }
+}
+
+void MainWindow::openFolderDialog() {
+    const QString dir =
+        QFileDialog::getExistingDirectory(this, tr("Folder as Workspace"), m_explorerPanel->root());
+    if (dir.isEmpty())
+        return;
+    m_explorerPanel->setRoot(dir);
+    m_explorerDock->show();
+    m_explorerDock->raise();
+}
+
+void MainWindow::updateDocumentMapSource() {
+    EditorWidget* editor = currentEditor();
+    if (!editor) {
+        m_documentMap->detachEditor();
+        return;
+    }
+    m_documentMap->attachEditor(editor);
+    if (m_explorerPanel && m_explorerPanel->isFollowing())
+        m_explorerPanel->revealPath(editor->filePath());
+}
+
+void MainWindow::reattachToMain(EditorWidget* editor) {
+    if (!editor)
+        return;
+    auto* from = qobject_cast<QTabWidget*>(editor->parentWidget());
+    if (from)
+        from->removeTab(from->indexOf(editor));
+    m_mainTabs->addTab(editor, tr("Untitled"));
+    m_mainTabs->setCurrentWidget(editor);
+    m_activeTabs = m_mainTabs;
+    updateTabTitle(editor);
+    editor->setFocus();
+    updateWindowMenu();
+    updateWindowTitle();
+}
+
+void MainWindow::detachCurrentToFloating() {
+    EditorWidget* editor = currentEditor();
+    if (!editor)
+        return;
+    auto* from = qobject_cast<QTabWidget*>(editor->parentWidget());
+    if (!from)
+        return;
+    auto* window = new FloatingWindow;
+    window->setAttribute(Qt::WA_DeleteOnClose);
+    m_floatingWindows.append(window);
+    connect(window, &QObject::destroyed, this,
+            [this, window]() { m_floatingWindows.removeAll(window); });
+    from->removeTab(from->indexOf(editor));
+    window->addEditor(editor, this);
+    window->show();
+    window->raise();
+    updateWindowMenu();
+    updateWindowTitle();
+}
+
+void MainWindow::mergeFloatingWindows() {
+    for (FloatingWindow* window : QList<FloatingWindow*>(m_floatingWindows))
+        window->close();
+}
+
+void MainWindow::updateLanguageMenu() {
+    if (m_languageActions.isEmpty())
+        return;
+    EditorWidget* editor = currentEditor();
+    const QString current = editor ? editor->languageId() : QString();
+    for (QAction* action : m_languageActions)
+        action->setChecked(action->data().toString() == current);
+}
+
+void MainWindow::exportCurrentHtml() {
+    EditorWidget* editor = currentEditor();
+    if (!editor)
+        return;
+    const QFileInfo info(editor->filePath());
+    const QString defaultName =
+        info.isFile() ? info.absolutePath() + QLatin1Char('/') + info.completeBaseName() + ".html"
+                      : QDir::homePath() + QStringLiteral("/Untitled.html");
+    const QString path = QFileDialog::getSaveFileName(this, tr("Export as HTML"), defaultName,
+                                                      tr("HTML files (*.html *.htm)"));
+    if (path.isEmpty())
+        return;
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        QMessageBox::warning(this, tr("PadForge"),
+                             tr("Cannot write %1:\n%2").arg(path, file.errorString()));
+        return;
+    }
+    file.write(editor->exportHtml().toUtf8());
+    file.close();
+    showMessage(tr("Exported to %1").arg(path));
+}
+
+void MainWindow::exportCurrentRtf() {
+    EditorWidget* editor = currentEditor();
+    if (!editor)
+        return;
+    const QFileInfo info(editor->filePath());
+    const QString defaultName =
+        info.isFile() ? info.absolutePath() + QLatin1Char('/') + info.completeBaseName() + ".rtf"
+                      : QDir::homePath() + QStringLiteral("/Untitled.rtf");
+    const QString path = QFileDialog::getSaveFileName(this, tr("Export as RTF"), defaultName,
+                                                      tr("RTF files (*.rtf)"));
+    if (path.isEmpty())
+        return;
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        QMessageBox::warning(this, tr("PadForge"),
+                             tr("Cannot write %1:\n%2").arg(path, file.errorString()));
+        return;
+    }
+    file.write(editor->exportRtf().toUtf8());
+    file.close();
+    showMessage(tr("Exported to %1").arg(path));
+}
+
+void MainWindow::printCurrent(bool preview) {
+    EditorWidget* editor = currentEditor();
+    if (!editor)
+        return;
+    QTextDocument* document = editor->printDocument();
+    if (preview) {
+        QPrinter printer(QPrinter::HighResolution);
+        QPrintPreviewDialog dialog(&printer, this);
+        connect(&dialog, &QPrintPreviewDialog::paintRequested, this,
+                [document](QPrinter* printer) { document->print(printer); });
+        dialog.exec();
+    } else {
+        QPrinter printer(QPrinter::HighResolution);
+        QPrintDialog dialog(&printer, this);
+        if (dialog.exec() == QDialog::Accepted)
+            document->print(&printer);
+    }
+    delete document;
 }
 
 void MainWindow::loadSession() {

@@ -9,6 +9,7 @@
 #include <QList>
 #include <QMainWindow>
 
+class QAction;
 class QDockWidget;
 class QLabel;
 class QMenu;
@@ -25,6 +26,9 @@ class ColumnEditorDialog;
 class GotoLineDialog;
 class DocumentSummaryDialog;
 class RunDialog;
+class ExplorerPanel;
+class DocumentMap;
+class FloatingWindow;
 
 class MainWindow : public QMainWindow, public PluginContext {
     Q_OBJECT
@@ -47,6 +51,9 @@ public:
     void setLanguage(const QString& lexerId) override;
     void showMessage(const QString& message) override;
     void addMenuItem(const QString& name, std::function<void()> callback) override;
+
+    // Called by FloatingWindow to move a detached editor back to the main tabs.
+    void reattachToMain(EditorWidget* editor);
 
 protected:
     void closeEvent(QCloseEvent* event) override;
@@ -107,6 +114,18 @@ private:
     void selectTabByNumber(int number);
     void updateWindowMenu();
     void applySettingsToAll();
+    void updateLanguageMenu();
+
+    // Explorer / document map / floating windows
+    void openFolderDialog();
+    void updateDocumentMapSource();
+    void detachCurrentToFloating();
+    void mergeFloatingWindows();
+
+    // Export and printing
+    void exportCurrentHtml();
+    void exportCurrentRtf();
+    void printCurrent(bool preview);
 
     // Session / recents / macros / plugins
     void loadSession();
@@ -130,6 +149,11 @@ private:
     FindReplaceDialog* m_findDialog = nullptr;
     FindInFilesPanel* m_findInFilesPanel = nullptr;
     QDockWidget* m_findDock = nullptr;
+    ExplorerPanel* m_explorerPanel = nullptr;
+    QDockWidget* m_explorerDock = nullptr;
+    DocumentMap* m_documentMap = nullptr;
+    QDockWidget* m_mapDock = nullptr;
+    QList<FloatingWindow*> m_floatingWindows;
 
     QLabel* m_statusPosition = nullptr;
     QLabel* m_statusEncoding = nullptr;
@@ -144,6 +168,7 @@ private:
     QMenu* m_pluginsMenu = nullptr;
     QMenu* m_themeMenu = nullptr;
     QMenu* m_windowMenu = nullptr;
+    QList<QAction*> m_languageActions;
 
     QAction* m_actWordWrap = nullptr;
     QAction* m_actSplitView = nullptr;

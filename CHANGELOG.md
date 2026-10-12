@@ -29,6 +29,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Window menu with document list and `Alt+1..9` jumps, split orientation,
   full screen (F11) and always-on-top.
 - `test_textops` unit suite; smoke tests for transformations and bookmarks.
+- **Explorer dock**: folder-as-workspace file tree with follow-active-file,
+  auto-opening on activation and Next/Previous subtle navigation.
+- **Floating windows**: detach the current tab (`Ctrl+Alt+D`), reattach from the
+  window itself, and merge all floating windows back into the main window.
+- **Export to HTML/RTF** with syntax highlighting, plus **print** and **print
+  preview** styled after the active theme via `Qt6::PrintSupport`.
+- **Insert menu**: date and time in three formats, GUIDs in five shapes, and the
+  current file name/path.
+- **Language menu** now lists every registered language with a check reflecting
+  the active tab's language, switching it per tab.
+- **Document Map dock**: clickable minimap rendering per-line styles, the visible
+  viewport and the caret line.
+- **Change-history markers**: red/green margin indicators for changed lines since
+  load, shown by default and toggleable in Preferences (`editor/showChangeHistory`).
 
 ## [0.1.0] - 2026-10-11
 

@@ -34,6 +34,8 @@ void AppSettings::load() {
     autoCompletion = s.value(QStringLiteral("editor/autoCompletion"), autoCompletion).toBool();
     autoCloseBrackets =
         s.value(QStringLiteral("editor/autoCloseBrackets"), autoCloseBrackets).toBool();
+    showChangeHistory =
+        s.value(QStringLiteral("editor/showChangeHistory"), showChangeHistory).toBool();
 
     edgeColumn = s.value(QStringLiteral("editor/edgeColumn"), edgeColumn).toInt();
     splitOrientation = s.value(QStringLiteral("view/splitOrientation"), splitOrientation).toInt();
@@ -58,6 +60,7 @@ void AppSettings::save() const {
     s.setValue(QStringLiteral("editor/highlightCurrentLine"), highlightCurrentLine);
     s.setValue(QStringLiteral("editor/autoCompletion"), autoCompletion);
     s.setValue(QStringLiteral("editor/autoCloseBrackets"), autoCloseBrackets);
+    s.setValue(QStringLiteral("editor/showChangeHistory"), showChangeHistory);
 
     s.setValue(QStringLiteral("editor/edgeColumn"), edgeColumn);
     s.setValue(QStringLiteral("view/splitOrientation"), splitOrientation);

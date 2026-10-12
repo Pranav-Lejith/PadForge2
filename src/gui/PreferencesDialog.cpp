@@ -49,6 +49,7 @@ PreferencesDialog::PreferencesDialog(const AppSettings& settings, QWidget* paren
     m_highlightLine = new QCheckBox(tr("Highlight current line"), this);
     m_autoCompletion = new QCheckBox(tr("Word completion (Ctrl+Space)"), this);
     m_autoClose = new QCheckBox(tr("Auto-close brackets"), this);
+    m_changeHistory = new QCheckBox(tr("Change history markers"), this);
 
     m_wordWrap->setChecked(m_initial.wordWrap);
     m_lineNumbers->setChecked(m_initial.showLineNumbers);
@@ -60,6 +61,7 @@ PreferencesDialog::PreferencesDialog(const AppSettings& settings, QWidget* paren
     m_highlightLine->setChecked(m_initial.highlightCurrentLine);
     m_autoCompletion->setChecked(m_initial.autoCompletion);
     m_autoClose->setChecked(m_initial.autoCloseBrackets);
+    m_changeHistory->setChecked(m_initial.showChangeHistory);
 
     m_edgeColumn = new QSpinBox(this);
     m_edgeColumn->setRange(0, 1000);
@@ -90,6 +92,7 @@ void PreferencesDialog::buildEditorTab() {
     form->addRow(tr(""), m_wordWrap);
     form->addRow(tr(""), m_autoCompletion);
     form->addRow(tr(""), m_autoClose);
+    form->addRow(tr(""), m_changeHistory);
     group->setObjectName(QStringLiteral("editorTab"));
 }
 
@@ -128,6 +131,7 @@ AppSettings PreferencesDialog::resultSettings() const {
     settings.highlightCurrentLine = m_highlightLine->isChecked();
     settings.autoCompletion = m_autoCompletion->isChecked();
     settings.autoCloseBrackets = m_autoClose->isChecked();
+    settings.showChangeHistory = m_changeHistory->isChecked();
     settings.splitOrientation = m_initial.splitOrientation;
     settings.alwaysOnTop = m_initial.alwaysOnTop;
     return settings;

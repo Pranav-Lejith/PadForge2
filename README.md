@@ -36,6 +36,10 @@ with [Lexilla](https://www.scintilla.org/Lexilla.html) for syntax highlighting.
   with per-language style mapping, plus a **Preferences** dialog.
 - **Window** menu with `Alt+1..9` document jumps, split orientation, **full
   screen** (F11), always-on-top and a **Run...** (F5) command runner.
+- **Explorer dock**, **Document Map** minimap, and **floating windows**
+  (detach/reattach tabs, `Ctrl+Alt+D` to detach).
+- **Export to HTML/RTF** and **print** with highlighting, plus an **Insert** menu
+  for date/time, GUIDs and the file name/path.
 - **Session restore** and a recent-files list.
 
 ## Building
@@ -45,7 +49,7 @@ with [Lexilla](https://www.scintilla.org/Lexilla.html) for syntax highlighting.
 - CMake ≥ 3.21
 - Ninja (recommended) or Make
 - A C++20 compiler (GCC ≥ 12 or Clang ≥ 15)
-- Qt 6 (Core, Gui, Widgets, Core5Compat, Test)
+- Qt 6 (Core, Gui, Widgets, PrintSupport, Core5Compat, Test)
 - Python 3 (used once to generate the Scintilla Qt binding)
 - Lua 5.4 or 5.5 (optional; enables the Lua plugin runtime)
 

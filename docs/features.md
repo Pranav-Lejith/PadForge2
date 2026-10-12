@@ -27,6 +27,16 @@ being a port of its code.
 - **Auto-indent** and **smart auto-close** of quotes and brackets.
 - **Column / multi-cursor** editing mode.
 - **Large-file mode** that temporarily disables expensive features.
+- **Change-history markers**: green/red margin indicators flag lines modified since
+  the document was loaded (toggleable in Preferences).
+
+## Insert
+
+- **Date and time** in three ready formats (`yyyy-MM-dd HH:mm:ss`,
+  `yyyy-MM-dd`, `HH:mm:ss`) from the Insert menu.
+- **GUID/UUID** generation in five shapes: lowercase, uppercase, uppercase with
+  braces, plain, and compact.
+- **File name** and **full path** of the current document.
 
 ## Languages
 
@@ -49,6 +59,12 @@ being a port of its code.
 - **Find in Files** across a directory tree with name filters and clickable
   results.
 
+## Export and printing
+
+- **Export** the current document with syntax highlighting to **HTML** or **RTF**.
+- **Print** and **print preview** with the printed output styled after the active
+  theme.
+
 ## Automation
 
 - **Macros**: record, store and replay editing sequences.
@@ -68,6 +84,13 @@ being a port of its code.
 
 - **Window** menu lists every open document with 1..9 quick-switch shortcuts;
   next/previous tab (Ctrl+Tab / Ctrl+Shift+Tab).
+- **Floating windows**: detach the current tab (Ctrl+Alt+D) into its own window
+  and reattach it from there; merge all floating windows back into the editor.
+- **Explorer dock** (View > Explorer): folder-as-workspace file tree; opening a
+  file opens it in the editor, and the Follow button keeps the tree synced to the
+  active document.
+- **Document Map** dock (View > Document Map): a clickable minimap of the whole
+  file showing per-line styles, the visible viewport and the caret line.
 - Split **orientation** (horizontal or vertical) for the second tab group.
 - **Full screen** (F11) and **always on top**.
 - **Run...** (F5) executes a shell command, expanding `$(FULL_CURRENT_PATH)` /

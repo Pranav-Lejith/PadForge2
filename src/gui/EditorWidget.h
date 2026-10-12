@@ -9,9 +9,19 @@
 #include <QWidget>
 #include <functional>
 
+class QTextDocument;
 class ScintillaEdit;
 
 namespace PadForge {
+
+// Identifiers for the GUID formats offered by the Insert menu.
+enum class GuidFormat {
+    Lower,       // 0f8fad5b-d9cb-469f-a165-70867728950e
+    Upper,       // 0F8FAD5B-D9CB-469F-A165-70867728950E
+    BracesUpper, // {0F8FAD5B-D9CB-469F-A165-70867728950E}
+    Plain,       // 0F8FAD5BD9CB469FA16570867728950E
+    Compact,     // 0f8fad5bd9cb469fa16570867728950e
+};
 
 // One open document: a ScintillaEdit plus its file/encoding/EOL/language state.
 class EditorWidget : public QWidget {
@@ -67,10 +77,29 @@ public:
     void applyTheme(const Theme& theme);
     void setZoom(int points);
 
+    // Export and printing. The returned document is owned by the caller.
+    QString exportHtml() const;
+    QString exportRtf() const;
+    QTextDocument* printDocument() const;
+
+    // Scintilla change-history markers (insertions / deletions indicators).
+    void setChangeHistoryEnabled(bool enabled);
+
+    // Insert operations for the Insert menu.
+    void insertDateTime(const QString& format);
+    void insertGuid(GuidFormat format);
+    void insertTextAtCursor(const QString& text);
+
     void highlightMatches(const QString& term, const SearchOptions& options);
     void clearSearchIndicators();
 
     void applySavedState(int cursor, int anchor, int firstVisibleLine, const QList<int>& bookmarks);
+
+    // Accessors used by the Document Map panel.
+    QColor colorForLine(int zeroBasedLine) const;
+    QColor documentBackground() const;
+    int firstVisibleLine() const;
+    int linesOnScreen() const;
 
     // Text transformations (operate on the current selection, or the current
     // line when there is no selection).
@@ -153,6 +182,17 @@ private:
     QPair<int, int> selectedLineRange() const;
     // Applies `transform` to the selected full-line text.
     void applyToSelectedLines(std::function<QString(const QString&)> transform);
+
+    struct StyledRun {
+        int start = 0;
+        int length = 0;
+        int style = 0;
+    };
+    // Style-change runs covering [start, end) retrieved from Scintilla.
+    QList<StyledRun> styledRuns(int start, int end) const;
+    QColor colorForStyle(int style) const;
+    bool boldForStyle(int style) const;
+    bool italicForStyle(int style) const;
 
     ScintillaEdit* m_editor = nullptr;
     QString m_filePath;
