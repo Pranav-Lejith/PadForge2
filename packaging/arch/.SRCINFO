@@ -14,6 +14,10 @@ pkgbase = padforge
 	depends = lua54
 	depends = hicolor-icon-theme
 	source = padforge-0.1.0.tar.gz::https://github.com/Pranav-Lejith/PadForge2/archive/v0.1.0.tar.gz
+	source = scintilla567.tgz::https://downloads.sourceforge.net/project/scintilla/scintilla/5.6.7/scintilla567.tgz
+	source = lexilla554.tgz::https://downloads.sourceforge.net/project/scintilla/lexilla/5.5.4/lexilla554.tgz
 	sha256sums = 27cba5f65a42237553368518fa91d97668fb6de0d6695d7c5586ba2d2af79283
+	sha256sums = 19e4476706750056f86ca70974810e4a5b08e73477e13f7d9fae78243606f6a7
+	sha256sums = fcd9ef74236a12359d1039827c93dbf827aa476c46f9fd6eef60bb96db1af2f6
 
 pkgname = padforge

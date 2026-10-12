@@ -1,8 +1,8 @@
 # Maintainer: PadForge contributors
 # Arch Linux PKGBUILD for PadForge.
 #
-# PadForge fetches pinned Scintilla and Lexilla sources at configure time, so
-# building needs network access (or a populated CMake FetchContent cache).
+# Scintilla and Lexilla sources are pinned as package sources so the build does
+# not depend on their upstream site being reachable from the builder.
 
 pkgname=padforge
 pkgver=0.1.0
@@ -13,15 +13,25 @@ url="https://github.com/Pranav-Lejith/PadForge2"
 license=('GPL-3.0-or-later')
 depends=('qt6-base' 'qt6-5compat' 'lua54' 'hicolor-icon-theme')
 makedepends=('cmake' 'ninja' 'gcc' 'python')
-source=("$pkgname-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz")
-sha256sums=('27cba5f65a42237553368518fa91d97668fb6de0d6695d7c5586ba2d2af79283')
+source=(
+    "$pkgname-$pkgver.tar.gz::$url/archive/v$pkgver.tar.gz"
+    'scintilla567.tgz::https://downloads.sourceforge.net/project/scintilla/scintilla/5.6.7/scintilla567.tgz'
+    'lexilla554.tgz::https://downloads.sourceforge.net/project/scintilla/lexilla/5.5.4/lexilla554.tgz'
+)
+sha256sums=(
+    '27cba5f65a42237553368518fa91d97668fb6de0d6695d7c5586ba2d2af79283'
+    '19e4476706750056f86ca70974810e4a5b08e73477e13f7d9fae78243606f6a7'
+    'fcd9ef74236a12359d1039827c93dbf827aa476c46f9fd6eef60bb96db1af2f6'
+)
 
 _srcdir="PadForge2-$pkgver"
 
 build() {
     cmake -S "$_srcdir" -B build -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
-        -DCMAKE_INSTALL_PREFIX=/usr
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DFETCHCONTENT_SOURCE_DIR_SCINTILLA="$srcdir/scintilla" \
+        -DFETCHCONTENT_SOURCE_DIR_LEXILLA="$srcdir/lexilla"
     cmake --build build
 }
 

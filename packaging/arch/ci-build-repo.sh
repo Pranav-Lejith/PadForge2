@@ -35,7 +35,8 @@ source_hash="$(sha256sum "$source_archive" | cut -d' ' -f1)"
 unlink "$source_archive"
 
 sed -i "s/^pkgver=.*/pkgver=${version}/" "$pkgbuild_dir/PKGBUILD"
-sed -i "s/^sha256sums=.*/sha256sums=('${source_hash}')/" "$pkgbuild_dir/PKGBUILD"
+sed -i "0,/^[[:space:]]*'[[:xdigit:]]\{64\}'/s//    '${source_hash}'/" \
+    "$pkgbuild_dir/PKGBUILD"
 useradd --create-home builder
 chown -R builder:builder "$pkgbuild_dir"
 runuser -u builder -- sh -c "cd '$pkgbuild_dir' && makepkg --printsrcinfo > .SRCINFO && makepkg --syncdeps --noconfirm --cleanbuild"
