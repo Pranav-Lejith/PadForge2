@@ -166,11 +166,11 @@ The repository is hosted publicly and does not require a GitHub account.
 ### macOS
 
 PadForge's macOS build targets Apple Silicon. Download the disk image from the
-[latest release](https://github.com/Pranav-Lejith/PadForge2/releases/latest),
-open `PadForge-macos-arm64.dmg`, and drag `PadForge.app` into Applications. The
-first macOS release will be attached after this build is merged and a new
-version is tagged. These initial builds are ad-hoc signed; macOS may ask you to
-confirm the first launch from Finder with Control-click → Open.
+[latest release](https://github.com/Pranav-Lejith/PadForge2/releases/latest)
+without signing in to GitHub, then open `PadForge-macos-arm64.dmg` and drag
+`PadForge.app` into Applications. Eject the mounted disk image when installation
+is complete. These initial builds are ad-hoc signed; if macOS blocks the first
+launch, Control-click the app in Finder and choose **Open**.
 
 ## Building from Source
 
