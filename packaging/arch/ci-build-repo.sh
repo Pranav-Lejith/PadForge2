@@ -69,7 +69,8 @@ gpg --batch --yes --pinentry-mode loopback \
     --passphrase-file "$passphrase_file" \
     --local-user "$PADFORGE_SIGNING_FINGERPRINT" \
     --detach-sign /tmp/padforge-signing-check
-unlink /tmp/padforge-signing-check /tmp/padforge-signing-check.sig
+unlink /tmp/padforge-signing-check
+unlink /tmp/padforge-signing-check.sig
 
 gpg --batch --yes --pinentry-mode loopback \
     --passphrase-file "$passphrase_file" \
