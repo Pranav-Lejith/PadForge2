@@ -169,6 +169,17 @@ public:
 
     void setFirstVisibleLine(int line);
 
+    // Folding commands.
+    void foldAll(bool fold);
+    void unfoldAll();
+    void toggleAllFolds();
+    void foldCurrent(bool fold);
+    void toggleCurrentFold();
+
+    // Structure navigation.
+    void gotoMatchingBrace();
+    void selectToMatchingBrace();
+
 public slots:
     void findNextFromCursor(const QString& term, const SearchOptions& options);
     void replaceCurrent(const QString& term, const QString& replacement,
@@ -194,6 +205,9 @@ private:
     void configureFoldingAndIndent();
     void configureMultiCursor();
     void updateBracketMatch();
+    // Resolves the brace next to the caret and its matching partner. Returns
+    // false when the caret is not next to a matched brace.
+    bool matchingBraces(int* source, int* match) const;
     void updateStatus();
     void applyLanguageToEditor();
     void emitDocumentChanged();

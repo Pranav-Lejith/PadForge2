@@ -1077,6 +1077,17 @@ void MainWindow::createMenus() {
     QAction* aGoto = editMenu->addAction(tr("Go to &Line..."));
     aGoto->setShortcut(QKeySequence(QStringLiteral("Ctrl+G")));
     connect(aGoto, &QAction::triggered, this, &MainWindow::showGotoLineDialog);
+    QAction* aMatchBrace = editMenu->addAction(tr("Go to Matching &Brace"));
+    aMatchBrace->setShortcut(QKeySequence(QStringLiteral("Ctrl+B")));
+    connect(aMatchBrace, &QAction::triggered, this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->gotoMatchingBrace();
+    });
+    QAction* aSelectBrace = editMenu->addAction(tr("Select to Matching Brace"));
+    connect(aSelectBrace, &QAction::triggered, this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->selectToMatchingBrace();
+    });
     QAction* aSummary = editMenu->addAction(tr("Document &Summary..."));
     connect(aSummary, &QAction::triggered, this, &MainWindow::showDocumentSummary);
     QAction* aWordCompletion = editMenu->addAction(tr("Word Completion"));
@@ -1117,6 +1128,32 @@ void MainWindow::createMenus() {
     viewMenu->addAction(m_actShowEol);
     viewMenu->addAction(m_actShowIndentGuides);
     viewMenu->addAction(m_actHighlightLine);
+    QMenu* foldingMenu = viewMenu->addMenu(tr("&Folding"));
+    foldingMenu->addAction(tr("Fold All"), this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->foldAll(true);
+    });
+    foldingMenu->addAction(tr("Unfold All"), this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->unfoldAll();
+    });
+    foldingMenu->addAction(tr("Toggle All Folds"), this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->toggleAllFolds();
+    });
+    foldingMenu->addSeparator();
+    foldingMenu->addAction(tr("Fold Current"), this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->foldCurrent(true);
+    });
+    foldingMenu->addAction(tr("Unfold Current"), this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->foldCurrent(false);
+    });
+    foldingMenu->addAction(tr("Toggle Current Fold"), this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->toggleCurrentFold();
+    });
     viewMenu->addSeparator();
     QAction* aExplorer = viewMenu->addAction(tr("E&xplorer"));
     aExplorer->setCheckable(true);

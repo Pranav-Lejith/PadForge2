@@ -44,6 +44,8 @@ private slots:
     void closeOtherAndAllDocuments();
     void sortTabsReordersByName();
     void tabTitleReflectsModification();
+    void foldCommandsToggleVisibility();
+    void matchingBraceNavigation();
 };
 
 void SmokeTest::newDocumentHoldsText() {
@@ -453,6 +455,49 @@ void SmokeTest::tabTitleReflectsModification() {
     editor->setDocumentText(QStringLiteral("changed\n"));
     QVERIFY(editor->isModified());
     QVERIFY(window.documentTabTitles().contains(QStringLiteral("mod.txt *")));
+}
+
+void SmokeTest::foldCommandsToggleVisibility() {
+    EditorWidget editor;
+    editor.setLanguage(QStringLiteral("cpp"));
+    editor.setDocumentText(QStringLiteral("void f() {\n"
+                                          "    int x = 1;\n"
+                                          "    int y = 2;\n"
+                                          "}\n"));
+    editor.editor()->send(SCI_COLOURISE, 0, -1);
+
+    QCOMPARE(editor.editor()->send(SCI_GETLINEVISIBLE, 1), 1);
+    editor.foldAll(true);
+    QCOMPARE(editor.editor()->send(SCI_GETLINEVISIBLE, 1), 0);
+    editor.unfoldAll();
+    QCOMPARE(editor.editor()->send(SCI_GETLINEVISIBLE, 1), 1);
+
+    editor.gotoLine(1);
+    editor.foldCurrent(true);
+    QCOMPARE(editor.editor()->send(SCI_GETLINEVISIBLE, 1), 0);
+    editor.toggleCurrentFold();
+    QCOMPARE(editor.editor()->send(SCI_GETLINEVISIBLE, 1), 1);
+}
+
+void SmokeTest::matchingBraceNavigation() {
+    EditorWidget editor;
+    editor.setDocumentText(QStringLiteral("foo(bar) baz\n"));
+
+    // Caret on the opening parenthesis jumps to the closing one.
+    editor.editor()->send(SCI_GOTOPOS, 3);
+    editor.gotoMatchingBrace();
+    QCOMPARE(int(editor.editor()->send(SCI_GETCURRENTPOS)), 7);
+
+    // Selecting from the closing parenthesis includes both braces.
+    editor.editor()->send(SCI_GOTOPOS, 7);
+    editor.selectToMatchingBrace();
+    QCOMPARE(int(editor.editor()->send(SCI_GETSELECTIONSTART)), 3);
+    QCOMPARE(int(editor.editor()->send(SCI_GETSELECTIONEND)), 8);
+
+    // A caret not next to a brace does nothing.
+    editor.editor()->send(SCI_GOTOPOS, 0);
+    editor.gotoMatchingBrace();
+    QCOMPARE(int(editor.editor()->send(SCI_GETCURRENTPOS)), 0);
 }
 
 QTEST_MAIN(SmokeTest)

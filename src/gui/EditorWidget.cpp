@@ -917,6 +917,75 @@ void EditorWidget::updateBracketMatch() {
     }
 }
 
+void EditorWidget::foldAll(bool fold) {
+    if (m_largeFile)
+        return;
+    m_editor->send(SCI_FOLDALL, fold ? SC_FOLDACTION_CONTRACT : SC_FOLDACTION_EXPAND);
+}
+
+void EditorWidget::unfoldAll() {
+    foldAll(false);
+}
+
+void EditorWidget::toggleAllFolds() {
+    if (m_largeFile)
+        return;
+    m_editor->send(SCI_FOLDALL, SC_FOLDACTION_TOGGLE);
+}
+
+void EditorWidget::foldCurrent(bool fold) {
+    if (m_largeFile)
+        return;
+    const sptr_t line =
+        m_editor->send(SCI_LINEFROMPOSITION, uptr_t(m_editor->send(SCI_GETCURRENTPOS)));
+    m_editor->send(SCI_FOLDLINE, uptr_t(line),
+                   fold ? SC_FOLDACTION_CONTRACT : SC_FOLDACTION_EXPAND);
+}
+
+void EditorWidget::toggleCurrentFold() {
+    if (m_largeFile)
+        return;
+    const sptr_t line =
+        m_editor->send(SCI_LINEFROMPOSITION, uptr_t(m_editor->send(SCI_GETCURRENTPOS)));
+    m_editor->send(SCI_TOGGLEFOLD, uptr_t(line));
+}
+
+bool EditorWidget::matchingBraces(int* source, int* match) const {
+    const sptr_t pos = m_editor->send(SCI_GETCURRENTPOS);
+    sptr_t start = pos;
+    const int ch = int(m_editor->send(SCI_GETCHARAT, uptr_t(pos)));
+    if (ch != '(' && ch != '[' && ch != '{' && ch != ')' && ch != ']' && ch != '}' && pos > 0)
+        start = pos - 1;
+    const sptr_t partner = m_editor->send(SCI_BRACEMATCH, uptr_t(start), 0);
+    if (partner < 0)
+        return false;
+    if (source)
+        *source = int(start);
+    if (match)
+        *match = int(partner);
+    return true;
+}
+
+void EditorWidget::gotoMatchingBrace() {
+    int source = 0;
+    int match = 0;
+    if (!matchingBraces(&source, &match))
+        return;
+    Q_UNUSED(source);
+    m_editor->send(SCI_GOTOPOS, uptr_t(match));
+    m_editor->send(SCI_SETSEL, uptr_t(match), sptr_t(match));
+}
+
+void EditorWidget::selectToMatchingBrace() {
+    int source = 0;
+    int match = 0;
+    if (!matchingBraces(&source, &match))
+        return;
+    const int from = std::min(source, match);
+    const int to = std::max(source, match) + 1;
+    m_editor->send(SCI_SETSEL, uptr_t(from), sptr_t(to));
+}
+
 void EditorWidget::updateStatus() {
     emit cursorPositionChanged(currentLine(), currentColumn());
 }

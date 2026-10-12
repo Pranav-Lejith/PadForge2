@@ -108,8 +108,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Folder** reveals the current file in the system file manager.
 - **Close All** and **Close All But This** in the File menu, and **Sort Tabs**
   (by name or path) in the Window menu.
-- Smoke tests for rename, close-all/close-others, tab sorting and the modified
-  tab-title marker (20 smoke tests).
+- **Structure navigation and folding**: EditorWidget supports fold/unfold/toggle
+  all folds and current fold, plus "Go to Matching Brace" and "Select to
+  Matching Brace".
+- Smoke tests for rename, close-all/close-others, tab sorting, the modified
+  tab-title marker, folding visibility toggles and matching-brace navigation (22 smoke tests).
 
 ### Fixed
 
