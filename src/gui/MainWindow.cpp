@@ -1,7 +1,8 @@
 #include "MainWindow.h"
 
-#include "ColumnEditorDialog.h"
+#include "Backup.h"
 #include "CharacterMapPanel.h"
+#include "ColumnEditorDialog.h"
 #include "ConsolePanel.h"
 #include "DocumentMap.h"
 #include "DocumentSummaryDialog.h"
@@ -41,6 +42,7 @@
 #include <QPrintDialog>
 #include <QPrintPreviewDialog>
 #include <QPrinter>
+#include <QSettings>
 #include <QSplitter>
 #include <QStandardPaths>
 #include <QStatusBar>
@@ -135,10 +137,24 @@ MainWindow::MainWindow(QWidget* parent) : QMainWindow(parent) {
     createStatusBar();
     createPluginMenu();
 
+    m_syncScroll = m_settings.syncScroll;
+
+    m_backupTimer.setInterval(20 * 1000);
+    connect(&m_backupTimer, &QTimer::timeout, this, &MainWindow::snapshotModifiedDocuments);
+
     loadMacros();
     setTheme(m_themeId);
     loadPlugins();
     loadSession();
+
+    QSettings crashed("PadForge", "PadForge");
+    const bool cleanShutdown = crashed.value(QStringLiteral("backup/cleanShutdown"), true).toBool();
+    crashed.setValue(QStringLiteral("backup/cleanShutdown"), false);
+    if (m_settings.backupEnabled) {
+        m_backupTimer.start();
+        if (!cleanShutdown)
+            offerRestoreBackups();
+    }
 
     if (m_editors.isEmpty())
         newDocument();
@@ -189,6 +205,8 @@ void MainWindow::registerEditor(EditorWidget* editor) {
         if (editor == currentEditor())
             updateStatus();
     });
+    connect(editor, &EditorWidget::scrolled, this,
+            [this, editor]() { syncScrollFrom(editor); });
     connect(editor, &EditorWidget::languageChanged, this, [this, editor](const QString&) {
         if (editor == currentEditor())
             updateStatus();
@@ -365,6 +383,9 @@ void MainWindow::closeEvent(QCloseEvent* event) {
     saveSession();
     saveMacros();
     m_settings.save();
+    if (m_settings.backupEnabled)
+        BackupManager::clear();
+    QSettings("PadForge", "PadForge").setValue(QStringLiteral("backup/cleanShutdown"), true);
     event->accept();
 }
 
@@ -499,6 +520,9 @@ void MainWindow::createMenus() {
     connect(aSaveAs, &QAction::triggered, this, &MainWindow::saveCurrentAs);
     QAction* aSaveAll = fileMenu->addAction(tr("Save A&ll"));
     connect(aSaveAll, &QAction::triggered, this, &MainWindow::saveAll);
+    QAction* aSaveCopy = fileMenu->addAction(tr("Save a Copy A&s..."));
+    aSaveCopy->setShortcut(QKeySequence(QStringLiteral("Ctrl+Alt+S")));
+    connect(aSaveCopy, &QAction::triggered, this, &MainWindow::saveCurrentCopyAs);
     QAction* aReload = fileMenu->addAction(tr("Re&load from Disk"));
     connect(aReload, &QAction::triggered, this, &MainWindow::reloadCurrent);
 
@@ -768,6 +792,12 @@ void MainWindow::createMenus() {
         if (EditorWidget* editor = currentEditor())
             editor->triggerCompletion();
     });
+    QAction* aFunctionCompletion = editMenu->addAction(tr("Function &Completion"));
+    aFunctionCompletion->setShortcut(QKeySequence(QStringLiteral("Ctrl+Enter")));
+    connect(aFunctionCompletion, &QAction::triggered, this, [this]() {
+        if (EditorWidget* editor = currentEditor())
+            editor->triggerSymbolCompletion();
+    });
 
     m_macroMenu = editMenu->addMenu(tr("&Macro"));
     m_macroMenu->addAction(m_actRecordMacro);
@@ -859,6 +889,17 @@ void MainWindow::createMenus() {
     QMenu* orientationMenu = viewMenu->addMenu(tr("Split Orientation"));
     orientationMenu->addAction(m_actSplitHorizontal);
     orientationMenu->addAction(m_actSplitVertical);
+    viewMenu->addSeparator();
+    QAction* aSyncScroll = viewMenu->addAction(tr("Synchronized Scrolling"));
+    aSyncScroll->setCheckable(true);
+    aSyncScroll->setChecked(m_syncScroll);
+    connect(aSyncScroll, &QAction::toggled, this, [this](bool on) {
+        m_syncScroll = on;
+        m_settings.syncScroll = on;
+        m_settings.save();
+        if (on)
+            syncScrollFrom(currentEditor());
+    });
     viewMenu->addSeparator();
     QAction* aZoomIn = viewMenu->addAction(tr("Zoom &In"));
     aZoomIn->setShortcut(QKeySequence::ZoomIn);
@@ -1180,6 +1221,21 @@ void MainWindow::saveCurrentAs() {
     QString error;
     if (!editor->saveFileAs(path, &error))
         QMessageBox::warning(this, tr("PadForge"), tr("Cannot save file:\n%1").arg(error));
+}
+
+void MainWindow::saveCurrentCopyAs() {
+    EditorWidget* editor = currentEditor();
+    if (!editor)
+        return;
+    const QString path =
+        QFileDialog::getSaveFileName(this, tr("Save a Copy As"), editor->filePath());
+    if (path.isEmpty())
+        return;
+    QString error;
+    if (!editor->saveCopyAs(path, &error))
+        QMessageBox::warning(this, tr("PadForge"), tr("Cannot save copy:\n%1").arg(error));
+    else
+        showMessage(tr("Saved a copy."));
 }
 
 void MainWindow::saveAll() {
@@ -1544,6 +1600,74 @@ void MainWindow::updateFunctionListSource() {
         m_functionList->attachEditor(editor);
     else
         m_functionList->detachEditor();
+}
+
+EditorWidget* MainWindow::otherViewEditor(EditorWidget* editor) const {
+    auto* tabs = qobject_cast<QTabWidget*>(editor->parentWidget());
+    if (!tabs)
+        return nullptr;
+    QTabWidget* other = (tabs == m_mainTabs) ? m_subTabs : m_mainTabs;
+    if (!other || other->isHidden() || other->count() == 0)
+        return nullptr;
+    return qobject_cast<EditorWidget*>(other->currentWidget());
+}
+
+void MainWindow::syncScrollFrom(EditorWidget* source) {
+    if (!m_syncScroll || m_syncingScroll || !source)
+        return;
+    EditorWidget* other = otherViewEditor(source);
+    if (!other || other == source)
+        return;
+    const int line = int(source->editor()->firstVisibleLine());
+    if (int(other->editor()->firstVisibleLine()) == line)
+        return;
+    m_syncingScroll = true;
+    other->setFirstVisibleLine(line);
+    m_syncingScroll = false;
+}
+
+void MainWindow::snapshotModifiedDocuments() {
+    if (!m_settings.backupEnabled)
+        return;
+    BackupManager::clear();
+    int untitledIndex = 0;
+    for (EditorWidget* editor : m_editors) {
+        if (editor->isLargeFile())
+            continue;
+        if (!editor->isModified() && !editor->isUntitled())
+            continue;
+        BackupEntry entry;
+        if (editor->isUntitled()) {
+            entry.key = QStringLiteral("untitled-%1").arg(untitledIndex++);
+            entry.untitled = true;
+        } else {
+            entry.key = BackupManager::keyForPath(editor->filePath());
+            entry.originalPath = editor->filePath();
+        }
+        entry.text = editor->documentText();
+        BackupManager::write(entry);
+    }
+}
+
+void MainWindow::offerRestoreBackups() {
+    const QList<BackupEntry> entries = BackupManager::list();
+    if (entries.isEmpty())
+        return;
+    const auto choice = QMessageBox::question(
+        this, tr("Recover unsaved documents"),
+        tr("PadForge did not shut down cleanly. Restore %1 unsaved document(s)?")
+            .arg(entries.size()),
+        QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
+    if (choice == QMessageBox::Yes) {
+        for (const BackupEntry& entry : entries) {
+            if (entry.untitled)
+                newDocument(entry.text);
+            else
+                newDocument(entry.text, entry.originalPath);
+        }
+        showMessage(tr("Restored %1 unsaved document(s).").arg(entries.size()));
+    }
+    BackupManager::clear();
 }
 
 void MainWindow::reattachToMain(EditorWidget* editor) {

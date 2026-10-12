@@ -29,8 +29,12 @@ with [Lexilla](https://www.scintilla.org/Lexilla.html) for syntax highlighting.
 - **Line tools**: delete/duplicate/move lines, join & split, sort, remove
   duplicates, case conversion, trim whitespace, tabify/untabify.
 - **Column editor** (repeated text or numbered columns), **word completion**
-  (Ctrl+Space) and per-language **comment/uncomment**.
+  (Ctrl+Space), **function/symbol completion** (Ctrl+Enter) and per-language
+  **comment/uncomment**.
 - **Column / multi-cursor editing** mode.
+- **Backup and crash recovery**: `.bak`-on-save, periodic snapshots of modified
+  documents and restore after an unclean exit.
+- **Synchronized Scrolling** for the split view (side-by-side files).
 - **Macros**: record, save and replay editing sequences.
 - **Plugin runtime** for **Lua** scripts and **native** shared libraries through
   a small, stable C ABI, plus an interactive **Lua script console** (REPL).

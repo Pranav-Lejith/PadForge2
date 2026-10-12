@@ -25,6 +25,9 @@ struct AppSettings {
     bool autoCloseTags = true;
     bool calltips = true;
     bool showChangeHistory = true;
+    bool backupOnSave = false;
+    bool backupEnabled = true;
+    bool syncScroll = false;
 
     int edgeColumn = 0;       // 0 disables the edge line
     int splitOrientation = 0; // 0 = horizontal, 1 = vertical

@@ -47,6 +47,8 @@ private:
     QCheckBox* m_autoCloseTags = nullptr;
     QCheckBox* m_calltips = nullptr;
     QCheckBox* m_changeHistory = nullptr;
+    QCheckBox* m_backupOnSave = nullptr;
+    QCheckBox* m_backupEnabled = nullptr;
 };
 
 } // namespace PadForge

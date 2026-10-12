@@ -37,6 +37,9 @@ public:
     bool openFile(const QString& path, QString* error = nullptr);
     bool saveFile(QString* error = nullptr);
     bool saveFileAs(const QString& path, QString* error = nullptr);
+    // Writes a copy of the current contents without touching the file path,
+    // save point or read-only state.
+    bool saveCopyAs(const QString& path, QString* error = nullptr);
 
     QString filePath() const { return m_filePath; }
     void setFilePath(const QString& path);
@@ -152,11 +155,17 @@ public:
     void setAutoCloseBrackets(bool enabled);
     void setAutoCloseTags(bool enabled);
     void setCalltips(bool enabled);
+    void setBackupOnSave(bool enabled);
     void applyZoomFromSettings();
 
     // Word completion.
     void triggerCompletion();
     void setWordCompletionEnabled(bool enabled);
+
+    // Symbol/function completion (Edit > Function Completion, Ctrl+Enter).
+    void triggerSymbolCompletion();
+
+    void setFirstVisibleLine(int line);
 
 public slots:
     void findNextFromCursor(const QString& term, const SearchOptions& options);
@@ -169,6 +178,7 @@ protected:
 signals:
     void modificationChanged(bool dirty);
     void textChanged();
+    void scrolled();
     void cursorPositionChanged(int line, int column);
     void filePathChanged(const QString& path);
     void languageChanged(const QString& id);
@@ -220,9 +230,11 @@ private:
     bool m_autoCloseBrackets = true;
     bool m_autoCloseTags = true;
     bool m_calltips = true;
+    bool m_backupOnSave = false;
     int m_tabWidth = 4;
     QString m_fontFamily = QStringLiteral("Monospace");
     int m_fontSize = 11;
+    int m_lastFirstVisibleLine = -1;
     QHash<QString, QString> m_signatures;
     QTimer m_outlineTimer;
 };

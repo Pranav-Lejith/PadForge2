@@ -9,6 +9,7 @@
 #include <QCryptographicHash>
 #include <QList>
 #include <QMainWindow>
+#include <QTimer>
 
 class QAction;
 class QDockWidget;
@@ -87,6 +88,7 @@ private:
     void openFilesDialog();
     void saveCurrent();
     void saveCurrentAs();
+    void saveCurrentCopyAs();
     void saveAll();
     void reloadCurrent();
     void setEncodingForCurrent(const EncodingInfo& encoding, bool reencode);
@@ -126,6 +128,14 @@ private:
     void updateFunctionListSource();
     void detachCurrentToFloating();
     void mergeFloatingWindows();
+
+    // Split-view synchronized scrolling
+    void syncScrollFrom(EditorWidget* source);
+    EditorWidget* otherViewEditor(EditorWidget* editor) const;
+
+    // Backup and crash recovery
+    void snapshotModifiedDocuments();
+    void offerRestoreBackups();
 
     // Export and printing
     void exportCurrentHtml();
@@ -180,6 +190,10 @@ private:
     QLabel* m_statusEol = nullptr;
     QLabel* m_statusLanguage = nullptr;
     QLabel* m_statusReadOnly = nullptr;
+
+    QTimer m_backupTimer;
+    bool m_syncScroll = false;
+    bool m_syncingScroll = false;
 
     QMenu* m_recentMenu = nullptr;
     QMenu* m_languageMenu = nullptr;

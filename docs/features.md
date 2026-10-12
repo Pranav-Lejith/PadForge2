@@ -24,6 +24,9 @@ being a port of its code.
 - **Column editor**: insert repeated text or consecutive, zero-padded numbers
   across a line range.
 - **Word completion** (Ctrl+Space) fed by words already present in the document.
+- **Function/symbol completion** (Ctrl+Enter) fed by the document outline
+  (function, class, struct, interface names), falling back to document words in
+  languages without an outline.
 - **Auto-indent** and **smart auto-close** of quotes and brackets.
 - **Auto-close HTML/XML tags**: typing `>` after an opening tag inserts the
   matching closing tag, skipping void elements and comments.
@@ -93,6 +96,19 @@ being a port of its code.
 - **Copy File Name** / **Copy Full Path** for the active document.
 - **Read-Only Mode** toggle plus automatic read-only detection for files that are
   not writable, shown as **R/O** in the status bar and preserved across sessions.
+- **Save a Copy As...** (Ctrl+Alt+S) writes the current contents to a new file
+  without changing the document's path or save state.
+
+## Backup and recovery
+
+- **Backup on save** (Preferences > Editing): when enabled, saving over an
+  existing file first shunts the previous contents into `<name>.bak`.
+- **Periodic snapshots**: every 20 seconds, modified and unsaved documents are
+  snapshotted into the per-user data directory (off by default; enabled in
+  Preferences > Backup).
+- **Crash recovery**: on the next launch after an unclean exit, PadForge offers
+  to restore every snapshotted document as recovered editing tabs. A clean quit
+  clears the snapshots.
 
 ## Appearance
 
@@ -101,7 +117,8 @@ being a port of its code.
 - Configurable zoom.
 - **Preferences** dialog and a **Settings** menu persist editor options
   (font, tab width, word wrap, margins, whitespace/EOL display, edge line,
-  completion, bracket and tag auto-close, calltips) across sessions.
+  completion, bracket and tag auto-close, calltips, backup on save, periodic
+  snapshots, synchronized scrolling) across sessions.
 
 ## Window management
 
@@ -120,6 +137,8 @@ being a port of its code.
 - **Character Map** dock (View > Character Map): a browsable grid of Unicode
   blocks; double-click a glyph to insert it at the caret.
 - Split **orientation** (horizontal or vertical) for the second tab group.
+- **Synchronized Scrolling** (View menu): keeps the top visible line of both tab
+  groups in lockstep for side-by-side diffing (Views side by side recommended).
 - **Full screen** (F11) and **always on top**.
 - **Run...** (F5) executes a shell command, expanding `$(FULL_CURRENT_PATH)` /
   `$(CURRENT_DIRECTORY)` / `$(CURRENT_FILENAME)` style variables, and shows

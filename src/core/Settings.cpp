@@ -38,6 +38,9 @@ void AppSettings::load() {
     calltips = s.value(QStringLiteral("editor/calltips"), calltips).toBool();
     showChangeHistory =
         s.value(QStringLiteral("editor/showChangeHistory"), showChangeHistory).toBool();
+    backupOnSave = s.value(QStringLiteral("editor/backupOnSave"), backupOnSave).toBool();
+    backupEnabled = s.value(QStringLiteral("backup/enabled"), backupEnabled).toBool();
+    syncScroll = s.value(QStringLiteral("view/syncScroll"), syncScroll).toBool();
 
     edgeColumn = s.value(QStringLiteral("editor/edgeColumn"), edgeColumn).toInt();
     splitOrientation = s.value(QStringLiteral("view/splitOrientation"), splitOrientation).toInt();
@@ -65,6 +68,9 @@ void AppSettings::save() const {
     s.setValue(QStringLiteral("editor/autoCloseTags"), autoCloseTags);
     s.setValue(QStringLiteral("editor/calltips"), calltips);
     s.setValue(QStringLiteral("editor/showChangeHistory"), showChangeHistory);
+    s.setValue(QStringLiteral("editor/backupOnSave"), backupOnSave);
+    s.setValue(QStringLiteral("backup/enabled"), backupEnabled);
+    s.setValue(QStringLiteral("view/syncScroll"), syncScroll);
 
     s.setValue(QStringLiteral("editor/edgeColumn"), edgeColumn);
     s.setValue(QStringLiteral("view/splitOrientation"), splitOrientation);

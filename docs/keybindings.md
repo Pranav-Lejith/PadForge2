@@ -10,6 +10,7 @@ PadForge follows the familiar Notepad++/desktop editor conventions.
 | `Ctrl+O` | Open file |
 | `Ctrl+S` | Save |
 | `Ctrl+Shift+S` | Save as |
+| `Ctrl+Alt+S` | Save a copy as |
 | `Ctrl+W` | Close current document |
 | `Ctrl+P` | Print |
 | `Ctrl+Q` | Quit |
@@ -30,6 +31,7 @@ PadForge follows the familiar Notepad++/desktop editor conventions.
 | `Ctrl+Alt+C` | Column editor |
 | `Ctrl+G` | Go to line |
 | `Ctrl+Space` | Word completion |
+| `Ctrl+Enter` | Function/symbol completion |
 
 ## Search
 

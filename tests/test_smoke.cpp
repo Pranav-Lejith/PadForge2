@@ -1,7 +1,7 @@
+#include "CharacterMapPanel.h"
 #include "EditorWidget.h"
 #include "Encoding.h"
 #include "FunctionListPanel.h"
-#include "CharacterMapPanel.h"
 #include "MainWindow.h"
 #include "SearchEngine.h"
 #include "TextOps.h"
@@ -33,6 +33,9 @@ private slots:
     void readOnlyDetection();
     void functionListPanelBuildsOutline();
     void characterMapBuildsGrid();
+    void backupOnSaveWritesDotBak();
+    void saveCopyAsLeavesDocumentUntouched();
+    void setFirstVisibleLineScrolls();
 };
 
 void SmokeTest::newDocumentHoldsText() {
@@ -240,6 +243,75 @@ void SmokeTest::characterMapBuildsGrid() {
     QVERIFY(grid->rowCount() >= 6);
     QVERIFY(grid->item(0, 0) != nullptr);
     QCOMPARE(grid->item(0, 0)->text(), QStringLiteral(" ")); // U+0020 SPACE
+}
+
+void SmokeTest::backupOnSaveWritesDotBak() {
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString path = dir.filePath(QStringLiteral("doc.txt"));
+    QFile file(path);
+    QVERIFY(file.open(QIODevice::WriteOnly));
+    file.write("original\n");
+    file.close();
+
+    EditorWidget editor;
+    QString error;
+    QVERIFY(editor.openFile(path, &error));
+    editor.setBackupOnSave(true);
+    editor.setDocumentText(QStringLiteral("updated\n"));
+    QVERIFY(editor.saveFileAs(path, &error));
+
+    const QString bak = path + QStringLiteral(".bak");
+    QVERIFY(QFileInfo::exists(bak));
+    QFile bakFile(bak);
+    QVERIFY(bakFile.open(QIODevice::ReadOnly));
+    // The .bak holds the previous on-disk contents shunted aside by the save.
+    QCOMPARE(QString::fromUtf8(bakFile.readAll()), QStringLiteral("original\n"));
+
+    bakFile.close();
+    editor.setDocumentText(QStringLiteral("final\n"));
+    QVERIFY(editor.saveFileAs(path, &error));
+    QVERIFY(bakFile.open(QIODevice::ReadOnly));
+    QCOMPARE(QString::fromUtf8(bakFile.readAll()), QStringLiteral("updated\n"));
+
+    const QString savedAs = dir.filePath(QStringLiteral("second.txt"));
+    QVERIFY(editor.saveFileAs(savedAs, &error));
+    QVERIFY(!QFileInfo::exists(savedAs + QStringLiteral(".bak")));
+}
+
+void SmokeTest::saveCopyAsLeavesDocumentUntouched() {
+    QTemporaryDir dir;
+    QVERIFY(dir.isValid());
+    const QString path = dir.filePath(QStringLiteral("orig.txt"));
+    const QString copy = dir.filePath(QStringLiteral("copy.txt"));
+
+    EditorWidget editor;
+    editor.setDocumentText(QStringLiteral("a\nb\n"));
+    QString error;
+    QVERIFY(editor.saveFileAs(path, &error));
+
+    editor.setDocumentText(QStringLiteral("a\nb\nc\n"));
+    QVERIFY(editor.saveCopyAs(copy, &error));
+    QCOMPARE(editor.filePath(), path);
+    QVERIFY(editor.isModified());
+
+    QFile copyFile(copy);
+    QVERIFY(copyFile.open(QIODevice::ReadOnly));
+    QCOMPARE(QString::fromUtf8(copyFile.readAll()), QStringLiteral("a\nb\nc\n"));
+}
+
+void SmokeTest::setFirstVisibleLineScrolls() {
+    EditorWidget editor;
+    QString text;
+    for (int i = 0; i < 100; ++i)
+        text += QStringLiteral("line %1\n").arg(i);
+    editor.setDocumentText(text);
+
+    QCOMPARE(editor.firstVisibleLine(), 0);
+    editor.setFirstVisibleLine(10);
+    QCOMPARE(editor.firstVisibleLine(), 10);
+    editor.setFirstVisibleLine(0);
+    QCOMPARE(editor.firstVisibleLine(), 0);
 }
 
 QTEST_MAIN(SmokeTest)

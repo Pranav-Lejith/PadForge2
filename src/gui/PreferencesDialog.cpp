@@ -52,6 +52,8 @@ PreferencesDialog::PreferencesDialog(const AppSettings& settings, QWidget* paren
     m_autoCloseTags = new QCheckBox(tr("Auto-close HTML/XML tags"), this);
     m_calltips = new QCheckBox(tr("Parameter calltips"), this);
     m_changeHistory = new QCheckBox(tr("Change history markers"), this);
+    m_backupOnSave = new QCheckBox(tr("Backup file on save (.bak)"), this);
+    m_backupEnabled = new QCheckBox(tr("Session snapshot && periodic backup"), this);
 
     m_wordWrap->setChecked(m_initial.wordWrap);
     m_lineNumbers->setChecked(m_initial.showLineNumbers);
@@ -66,6 +68,8 @@ PreferencesDialog::PreferencesDialog(const AppSettings& settings, QWidget* paren
     m_autoCloseTags->setChecked(m_initial.autoCloseTags);
     m_calltips->setChecked(m_initial.calltips);
     m_changeHistory->setChecked(m_initial.showChangeHistory);
+    m_backupOnSave->setChecked(m_initial.backupOnSave);
+    m_backupEnabled->setChecked(m_initial.backupEnabled);
 
     m_edgeColumn = new QSpinBox(this);
     m_edgeColumn->setRange(0, 1000);
@@ -99,6 +103,8 @@ void PreferencesDialog::buildEditorTab() {
     form->addRow(tr(""), m_autoCloseTags);
     form->addRow(tr(""), m_calltips);
     form->addRow(tr(""), m_changeHistory);
+    form->addRow(tr(""), m_backupOnSave);
+    form->addRow(tr(""), m_backupEnabled);
     group->setObjectName(QStringLiteral("editorTab"));
 }
 
@@ -140,8 +146,11 @@ AppSettings PreferencesDialog::resultSettings() const {
     settings.autoCloseTags = m_autoCloseTags->isChecked();
     settings.calltips = m_calltips->isChecked();
     settings.showChangeHistory = m_changeHistory->isChecked();
+    settings.backupOnSave = m_backupOnSave->isChecked();
+    settings.backupEnabled = m_backupEnabled->isChecked();
     settings.splitOrientation = m_initial.splitOrientation;
     settings.alwaysOnTop = m_initial.alwaysOnTop;
+    settings.syncScroll = m_initial.syncScroll;
     return settings;
 }
 

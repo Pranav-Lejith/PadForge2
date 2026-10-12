@@ -68,6 +68,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `EditorWidget::textChanged` signal emitted on every document modification.
 - `test_outline` unit suite and smoke tests for the Function List and Character
   Map panels.
+- **Backup on save** (`editor/backupOnSave`, Preferences > Editing): when
+  enabled, saving over an existing file first copies the previous contents to
+  `<name>.bak` (`saveFileAs`).
+- **Periodic snapshots + crash recovery**: a 20-second timer snapshots modified
+  and unsaved documents through the new `BackupManager` core module (per-entry
+  JSON in the user data directory); on next launch after an unclean exit PadForge
+  offers to restore them, and a clean quit clears the snapshots
+  (`backup/enabled`).
+- **Synchronized Scrolling** (`view/syncScroll`): keeps the two split-view tab
+  groups' top visible line in lockstep via a new `EditorWidget::scrolled()`
+  signal and `setFirstVisibleLine`.
+- **Function/symbol completion** (`Ctrl+Enter`): autocompletion fed by the
+  document outline (classes, functions) with a word-Completion fallback
+  (`EditorWidget::triggerSymbolCompletion`).
+- **Save a Copy As...** (`Ctrl+Alt+S`): writes the current contents to a new path
+  without touching the document's path or save state (`saveCopyAs`).
+- `test_backup` unit suite and smoke tests for `.bak`-on-save, save-copy and
+  top-line scrolling (14 smoke tests).
 
 ## [0.1.0] - 2026-10-11
 

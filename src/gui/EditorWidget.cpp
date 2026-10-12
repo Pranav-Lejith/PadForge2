@@ -112,6 +112,11 @@ EditorWidget::EditorWidget(QWidget* parent) : QWidget(parent), m_editor(new Scin
     connect(m_editor, &ScintillaEdit::updateUi, this, [this](auto) {
         updateStatus();
         updateBracketMatch();
+        const int first = int(m_editor->firstVisibleLine());
+        if (first != m_lastFirstVisibleLine) {
+            m_lastFirstVisibleLine = first;
+            emit scrolled();
+        }
     });
     connect(m_editor, &ScintillaEdit::marginClicked, this, [this](auto pos, auto, int margin) {
         if (margin == kBookmarkMargin) {
@@ -612,6 +617,12 @@ bool EditorWidget::saveFile(QString* error) {
 }
 
 bool EditorWidget::saveFileAs(const QString& path, QString* error) {
+    if (m_backupOnSave && QFileInfo::exists(path)) {
+        const QString bak = path + QStringLiteral(".bak");
+        QFile::remove(bak);
+        QFile::copy(path, bak);
+    }
+
     QString text = normalizedLineEndings(documentText());
     if (m_eol == Eol::CrLf)
         text.replace(QChar('\n'), QStringLiteral("\r\n"));
@@ -636,6 +647,29 @@ bool EditorWidget::saveFileAs(const QString& path, QString* error) {
     m_editor->send(SCI_SETSAVEPOINT);
     emit filePathChanged(m_filePath);
     emit modificationChanged(false);
+    return true;
+}
+
+bool EditorWidget::saveCopyAs(const QString& path, QString* error) {
+    QString text = normalizedLineEndings(documentText());
+    if (m_eol == Eol::CrLf)
+        text.replace(QChar('\n'), QStringLiteral("\r\n"));
+    else if (m_eol == Eol::Cr)
+        text.replace(QChar('\n'), QChar('\r'));
+
+    const QByteArray raw = EncodingDetector::encode(text, m_encoding);
+    QFile file(path);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        if (error)
+            *error = file.errorString();
+        return false;
+    }
+    if (file.write(raw) != raw.size()) {
+        if (error)
+            *error = file.errorString();
+        return false;
+    }
+    file.close();
     return true;
 }
 
@@ -1104,6 +1138,7 @@ void EditorWidget::applySettings(const AppSettings& settings) {
     setAutoCloseBrackets(settings.autoCloseBrackets);
     setAutoCloseTags(settings.autoCloseTags);
     setCalltips(settings.calltips);
+    setBackupOnSave(settings.backupOnSave);
     setChangeHistoryEnabled(settings.showChangeHistory);
     m_wordCompletionOn = settings.autoCompletion;
 }
@@ -1179,6 +1214,59 @@ void EditorWidget::setCalltips(bool enabled) {
         scheduleOutlineRefresh();
     else
         m_editor->send(SCI_CALLTIPCANCEL);
+}
+
+void EditorWidget::setBackupOnSave(bool enabled) {
+    m_backupOnSave = enabled;
+}
+
+void EditorWidget::setFirstVisibleLine(int line) {
+    m_editor->send(SCI_SETFIRSTVISIBLELINE, uptr_t(line));
+}
+
+void EditorWidget::triggerSymbolCompletion() {
+    const sptr_t pos = m_editor->send(SCI_GETCURRENTPOS);
+    const sptr_t wordStart = m_editor->send(SCI_WORDSTARTPOSITION, uptr_t(pos), true);
+    const int typedLength = int(pos - wordStart);
+    const QString prefix = typedLength > 0
+                               ? QString::fromUtf8(m_editor->textRange(int(wordStart), int(pos)))
+                               : QString();
+
+    QSet<QString> seen;
+    if (OutlineParser::supports(m_languageId)) {
+        const QList<OutlineItem> items = OutlineParser::parse(documentText(), m_languageId);
+        for (const OutlineItem& item : items) {
+            if (item.kind == QLatin1String("function") || item.kind == QLatin1String("class") ||
+                item.kind == QLatin1String("struct") || item.kind == QLatin1String("interface")) {
+                if (typedLength == 0 || item.name.startsWith(prefix, Qt::CaseInsensitive))
+                    seen.insert(item.name);
+            }
+        }
+    }
+
+    if (seen.isEmpty()) {
+        const QString text = documentText();
+        const QRegularExpression wordRe(QStringLiteral("[A-Za-z_][A-Za-z0-9_]*"));
+        auto it = wordRe.globalMatch(text);
+        while (it.hasNext()) {
+            const QString word = it.next().captured();
+            if (word.size() >= 2 &&
+                (typedLength == 0 || word.startsWith(prefix, Qt::CaseInsensitive)))
+                seen.insert(word);
+            if (seen.size() >= 500)
+                break;
+        }
+    }
+    if (seen.isEmpty())
+        return;
+
+    QStringList words(seen.begin(), seen.end());
+    words.sort(Qt::CaseInsensitive);
+    m_editor->send(SCI_AUTOCSETIGNORECASE, 1);
+    m_editor->send(SCI_AUTOCSETSEPARATOR, uptr_t(' '));
+    m_editor->send(SCI_AUTOCSETCHOOSESINGLE, 0);
+    const QByteArray list = words.join(QStringLiteral(" ")).toUtf8();
+    m_editor->send(SCI_AUTOCSHOW, uptr_t(typedLength), reinterpret_cast<sptr_t>(list.constData()));
 }
 
 void EditorWidget::handleTagAutoClose() {
