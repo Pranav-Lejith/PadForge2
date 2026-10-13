@@ -96,7 +96,16 @@ PadForge brings the familiar, efficient editing experience popularised by Notepa
 
 ## Screenshots
 
-*Coming soon — PadForge in action with different themes and layouts.*
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/padforge-main.png" alt="PadForge editing a C++ source file in the light theme" width="100%"><br><em>Tabbed editing and C++ syntax highlighting in the light theme</em></td>
+    <td align="center"><img src="docs/screenshots/padforge-dracula-theme.png" alt="The same C++ source open in PadForge's Dracula theme" width="100%"><br><em>Dracula theme</em></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/padforge-function-list.png" alt="PadForge Function List dock showing symbols in the current source file" width="100%"><br><em>Function List for quick code navigation</em></td>
+    <td align="center"><img src="docs/screenshots/padforge-find-replace.png" alt="PadForge Find and Replace dialog with search options" width="100%"><br><em>Find and Replace with regex, whole-word, and multi-document search options</em></td>
+  </tr>
+</table>
 
 ## Installation
 
